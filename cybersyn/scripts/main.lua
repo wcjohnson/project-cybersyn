@@ -225,36 +225,8 @@ end
 
 ---@param map_data MapData
 ---@param comb LuaEntity
-local function on_combinator_built(map_data, comb)
-	local pos_x = comb.position.x
-	local pos_y = comb.position.y
-
-	local search_area
-	if comb.direction == defines.direction.north or comb.direction == defines.direction.south then
-		search_area = {
-			{pos_x - 1.5, pos_y - 2},
-			{pos_x + 1.5, pos_y + 2}
-		}
-	else
-		search_area = {
-			{pos_x - 2, pos_y - 1.5},
-			{pos_x + 2, pos_y + 1.5}
-		}
-	end
-	local stop = nil
-	local rail = nil
-	local entities = comb.surface.find_entities_filtered({area = search_area, name = {"train-stop", "straight-rail"}})
-	for _, cur_entity in pairs(entities) do
-		if cur_entity.valid then
-			if cur_entity.name == "train-stop" then
-				--NOTE: if there are multiple stops we take the later one
-				stop = cur_entity
-			elseif cur_entity.type == "straight-rail" then
-				rail = cur_entity
-			end
-		end
-	end
-
+---@return string op
+local function combinator_build_init(map_data, comb)
 	local out = comb.surface.create_entity({
 		name = COMBINATOR_OUT_NAME,
 		position = comb.position,
@@ -289,6 +261,43 @@ local function on_combinator_built(map_data, comb)
 	map_data.to_comb_params[unit_number] = params
 	map_data.to_output[unit_number] = out
 	map_data.to_stop[unit_number] = stop
+
+	return op
+end
+
+---@param map_data MapData
+---@param comb LuaEntity
+local function on_combinator_built(map_data, comb)
+	local op = combinator_build_init(map_data, comb)
+
+	local pos_x = comb.position.x
+	local pos_y = comb.position.y
+
+	local search_area
+	if comb.direction == defines.direction.north or comb.direction == defines.direction.south then
+		search_area = {
+			{pos_x - 1.5, pos_y - 2},
+			{pos_x + 1.5, pos_y + 2}
+		}
+	else
+		search_area = {
+			{pos_x - 2, pos_y - 1.5},
+			{pos_x + 2, pos_y + 1.5}
+		}
+	end
+	local stop = nil
+	local rail = nil
+	local entities = comb.surface.find_entities_filtered({area = search_area, name = {"train-stop", "straight-rail"}})
+	for _, cur_entity in pairs(entities) do
+		if cur_entity.valid then
+			if cur_entity.name == "train-stop" then
+				--NOTE: if there are multiple stops we take the later one
+				stop = cur_entity
+			elseif cur_entity.type == "straight-rail" then
+				rail = cur_entity
+			end
+		end
+	end
 
 	if op == MODE_WAGON then
 		if rail then
@@ -327,6 +336,13 @@ local function on_combinator_built(map_data, comb)
 			end
 		end
 	end
+end
+
+
+---@param map_data MapData
+---@param comb LuaEntity
+local function on_combinator_ghost_built(map_data, comb)
+	combinator_build_init(map_data, comb)
 end
 
 ---@param map_data MapData
@@ -392,6 +408,22 @@ function on_combinator_broken(map_data, comb)
 		on_refueler_broken(map_data, id, entity--[[@as Refueler]])
 		on_stop_built_or_updated(map_data, stop--[[@as LuaEntity]], comb)
 	end
+
+	if out and out.valid then
+		out.destroy()
+	end
+	map_data.to_comb[comb_id] = nil
+	map_data.to_output[comb_id] = nil
+	map_data.to_stop[comb_id] = nil
+	map_data.to_comb_params[comb_id] = nil
+end
+
+---@param map_data MapData
+---@param comb LuaEntity
+function on_combinator_ghost_broken(map_data, comb)
+	---@type uint
+	local comb_id = comb.unit_number
+	local out = map_data.to_output[comb_id]
 
 	if out and out.valid then
 		out.destroy()
@@ -651,6 +683,8 @@ local function on_built(event)
 		on_stop_built_or_updated(storage, entity)
 	elseif entity.name == COMBINATOR_NAME then
 		on_combinator_built(storage, entity)
+	elseif entity.name == "entity-ghost" and entity.ghost_name == COMBINATOR_NAME then
+		on_combinator_ghost_built(storage, entity)
 	elseif entity.type == "inserter" then
 		update_stop_from_inserter(storage, entity)
 	elseif entity.type == "loader-1x1" then
@@ -670,6 +704,8 @@ local function on_broken(event)
 		on_stop_broken(storage, entity)
 	elseif entity.name == COMBINATOR_NAME then
 		on_combinator_broken(storage, entity)
+	elseif entity.name == "entity-ghost" and entity.ghost_name == COMBINATOR_NAME then
+		on_combinator_ghost_broken(storage, entity)
 	elseif entity.type == "inserter" then
 		update_stop_from_inserter(storage, entity, entity)
 	elseif entity.type == "loader-1x1" then
@@ -917,6 +953,7 @@ end
 local filter_built = {
 	{filter = "name", name = "train-stop"},
 	{filter = "name", name = COMBINATOR_NAME},
+	{filter = "ghost", ghost_name = COMBINATOR_NAME},
 	{filter = "type", type = "inserter"},
 	{filter = "type", type = "pump"},
 	{filter = "type", type = "straight-rail"},
@@ -926,6 +963,7 @@ local filter_built = {
 local filter_broken = {
 	{filter = "name", name = "train-stop"},
 	{filter = "name", name = COMBINATOR_NAME},
+	{filter = "ghost", name = COMBINATOR_NAME},
 	{filter = "type", type = "inserter"},
 	{filter = "type", type = "pump"},
 	{filter = "type", type = "straight-rail"},
