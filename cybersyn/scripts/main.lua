@@ -223,9 +223,12 @@ local function search_for_station_combinator(map_data, stop, comb_operation, com
 	end
 end
 
----@param control LuaArithmeticCombinatorControlBehavior
+---@param map_data MapData
+---@param comb LuaEntity
+---@param tags Tags?
 ---@return string? op
-local function combinator_build_init(control)
+local function combinator_build_init(map_data, comb, tags)
+	local control = get_comb_control(comb)
 	local params = control.parameters
 	local op = params.operation
 
@@ -240,12 +243,24 @@ local function combinator_build_init(control)
 		control.parameters = params
 	end
 
+	local unit_number = comb.unit_number--[[@as uint]]
+
+	if tags and tags.ghost_unit_number then
+		local old_unit_number = tags.ghost_unit_number
+		map_data.to_comb[old_unit_number] = nil
+		map_data.to_comb_params[old_unit_number] = nil
+	end
+
+	map_data.to_comb[unit_number] = comb
+	map_data.to_comb_params[unit_number] = params
+
 	return op
 end
 
 ---@param map_data MapData
 ---@param comb LuaEntity
-local function on_combinator_built(map_data, comb)
+---@param tags Tags?
+local function on_combinator_built(map_data, comb, tags)
 	local pos_x = comb.position.x
 	local pos_y = comb.position.y
 
@@ -289,13 +304,9 @@ local function on_combinator_built(map_data, comb)
 	local out_green = out.get_wire_connector(defines.wire_connector_id.circuit_green, true)
 	out_green.connect_to(comb_green, false, defines.wire_origin.script)
 
-	local control = get_comb_control(comb)
-	local params = control.parameters
-	local op = combinator_build_init(control)
+	local op = combinator_build_init(map_data, comb, tags)
 
 	local unit_number = comb.unit_number--[[@as uint]]
-	map_data.to_comb[unit_number] = comb
-	map_data.to_comb_params[unit_number] = params
 	map_data.to_output[unit_number] = out
 	map_data.to_stop[unit_number] = stop
 
@@ -339,10 +350,11 @@ local function on_combinator_built(map_data, comb)
 end
 
 
+---@param map_data MapData
 ---@param comb LuaEntity
-local function on_combinator_ghost_built(comb)
-	local control = get_comb_control(comb)
-	combinator_build_init(control)
+local function on_combinator_ghost_built(map_data, comb)
+	combinator_build_init(map_data, comb)
+	comb.tags = { ghost_unit_number = comb.unit_number }
 end
 
 ---@param map_data MapData
@@ -415,6 +427,14 @@ function on_combinator_broken(map_data, comb)
 	map_data.to_comb[comb_id] = nil
 	map_data.to_output[comb_id] = nil
 	map_data.to_stop[comb_id] = nil
+	map_data.to_comb_params[comb_id] = nil
+end
+
+function on_combinator_ghost_broken(map_data, comb)
+	---@type uint
+	local comb_id = comb.unit_number
+
+	map_data.to_comb[comb_id] = nil
 	map_data.to_comb_params[comb_id] = nil
 end
 
@@ -666,9 +686,9 @@ local function on_built(event)
 	if entity.name == "train-stop" then
 		on_stop_built_or_updated(storage, entity)
 	elseif entity.name == COMBINATOR_NAME then
-		on_combinator_built(storage, entity)
+		on_combinator_built(storage, entity, event.tags)
 	elseif entity.name == "entity-ghost" and entity.ghost_name == COMBINATOR_NAME then
-		on_combinator_ghost_built(entity)
+		on_combinator_ghost_built(storage, entity)
 	elseif entity.type == "inserter" then
 		update_stop_from_inserter(storage, entity)
 	elseif entity.type == "loader-1x1" then
@@ -688,6 +708,8 @@ local function on_broken(event)
 		on_stop_broken(storage, entity)
 	elseif entity.name == COMBINATOR_NAME then
 		on_combinator_broken(storage, entity)
+	elseif entity.name == "entity-ghost" and entity.ghost_name == COMBINATOR_NAME then
+		on_combinator_ghost_broken(storage, entity)
 	elseif entity.type == "inserter" then
 		update_stop_from_inserter(storage, entity, entity)
 	elseif entity.type == "loader-1x1" then
