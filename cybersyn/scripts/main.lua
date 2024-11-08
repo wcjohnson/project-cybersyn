@@ -448,6 +448,7 @@ function combinator_update(map_data, comb, reset_display)
 	local old_params = map_data.to_comb_params[unit_number]
 	local has_changed = false
 	local type, id, entity = nil, 0, nil
+	local is_ghost = comb.name == "entity-ghost"
 
 	if (old_params == nil ) then
 		--should be generated after this tick, but in case it persists it is better to let the player know to replace it
@@ -485,11 +486,19 @@ function combinator_update(map_data, comb, reset_display)
 
 	if old_params ~= nil and params.operation ~= old_params.operation then
 		--NOTE: This is rather dangerous, we may need to actually implement operation changing
-		on_combinator_broken(map_data, comb)
-		on_combinator_built(map_data, comb)
-		interface_raise_combinator_changed(comb, old_params)
+		if is_ghost then
+			on_combinator_ghost_broken(map_data, comb)
+			on_combinator_ghost_built(map_data, comb)
+		else
+			on_combinator_broken(map_data, comb)
+			on_combinator_built(map_data, comb)
+			-- If anyone actually needs notification of changed ghosts, perhaps a new event can be added for that
+			interface_raise_combinator_changed(comb, old_params)
+		end
 		return
 	end
+
+	if is_ghost then return end
 
 	local new_signal = params.first_signal
 	local old_signal = old_params ~= nil and old_params.first_signal
