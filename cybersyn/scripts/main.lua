@@ -119,6 +119,7 @@ end
 ---@param comb1 LuaEntity
 ---@param comb2 LuaEntity?
 local function on_station_built(map_data, stop, comb1, comb2)
+	game.print("on_station_built: stop " .. stop.unit_number .. " comb1 " .. comb1.unit_number .. " comb2 " .. (comb2 and comb2.unit_number or "nil"))
 	--NOTE: only place where new Station
 	local station = {
 		entity_stop = stop,
@@ -175,6 +176,7 @@ end
 ---@param station_id uint
 ---@param station Station
 function on_station_broken(map_data, station_id, station)
+	game.print("on_station_broken: station_id " .. station_id)
 	if station.deliveries_total > 0 then
 		--search for trains coming to the destroyed station
 		for train_id, train in pairs(map_data.trains) do
@@ -312,6 +314,7 @@ local function on_combinator_built(map_data, comb)
 			end
 		elseif op == MODE_SECONDARY_IO then
 			if station and not station.entity_comb2 then
+				game.print("on_combinator_built: station " .. id .. " gained comb2 " .. (comb and comb.unit_number or "nil"))
 				station.entity_comb2 = comb
 			end
 		elseif op == MODE_PRIMARY_IO then
@@ -323,6 +326,7 @@ local function on_combinator_built(map_data, comb)
 			end
 			if not station then
 				local comb2 = search_for_station_combinator(map_data, stop, MODE_SECONDARY_IO, comb)
+				game.print("on_combinator_built: station " .. id .. " gained comb1 " .. comb.unit_number .. ", optional comb2 " .. (comb2 and comb2.unit_number or "nil"))
 				on_station_built(map_data, stop, comb, comb2)
 			end
 		end
@@ -383,8 +387,11 @@ function on_combinator_broken(map_data, comb)
 		on_station_broken(map_data, id, entity--[[@as Station]])
 		on_stop_built_or_updated(map_data, stop--[[@as LuaEntity]], comb)
 	elseif type == 2 then
+		-- If a station control combinator is broken, search for a replacement
+		-- station control combinator near the stop.
 		local station = entity--[[@as Station]]
 		station.entity_comb2 = search_for_station_combinator(map_data, stop--[[@as LuaEntity]], MODE_SECONDARY_IO, comb)
+		game.print("on_combinator_broken: station " .. id .. " lost a comb2, new comb2 is " .. (station.entity_comb2 and station.entity_comb2.unit_number or "nil"))
 	elseif type == 3 then
 		on_depot_broken(map_data, id, entity--[[@as Depot]])
 		on_stop_built_or_updated(map_data, stop--[[@as LuaEntity]], comb)
