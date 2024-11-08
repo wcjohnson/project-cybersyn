@@ -325,7 +325,7 @@ function gui_opened(comb, player)
 					{type="flow", name="bottom-allowlist", direction="vertical", style_mods={vertical_align="top"}, visible=showLayout, children={
 						{type="label", name="allow_list_label_title", style="heading_2_label", caption={"cybersyn-gui.allow-list-preview"}, tooltip={"cybersyn-gui.allow-list-preview-tooltip"}, style_mods={top_padding=8}},
 						{type="label", name="allow_list_label", caption=layoutText, style_mods={top_padding=8}},
-						{type="button", name="allow_list_refresh", tags={id=comb.unit_number}, tooltip={"cybersyn-gui.allow-list-refresh-tooltip"}, caption={"cybersyn-gui.allow-list-refresh-description"}, handler=handle_refresh_allow},
+						{type="button", name="allow_list_refresh", tags={id=comb.unit_number}, tooltip={"cybersyn-gui.allow-list-refresh-tooltip"}, caption={"cybersyn-gui.allow-list-refresh-description"}, enabled = not is_ghost, handler=handle_refresh_allow},
 					}}
 				}}
 			}}
