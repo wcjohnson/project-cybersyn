@@ -30,14 +30,20 @@
 ---@field public se_get_space_elevator_name {}?
 ---@field public se_get_zone_from_surface_index {}?
 
----@class Station
+
+---@class Cybersyn.StationScheduleSettings
+---@field public enable_inactive true? If true, enable inactivity timeouts for trains at this station.
+---@field public enable_circuit_condition true? If `true`, trains directed to this station will be given a check>0 circuit condition in their schedule.
+
+---@class Station: Cybersyn.StationScheduleSettings
 ---@field public entity_stop LuaEntity
 ---@field public entity_comb1 LuaEntity
 ---@field public entity_comb2 LuaEntity?
 ---@field public is_p true?
 ---@field public is_r true?
 ---@field public is_stack true?
----@field public enable_inactive true?
+---@field public enable_train_count true? If `true`, the station control combinator for this station will output the number of trains enroute.
+---@field public enable_manual_inventory true? If `true`, the station will not internally compensate for incoming deliveries, and will instead rely on the user to manually control the station's inventory.
 ---@field public allows_all_trains true?
 ---@field public deliveries_total int
 ---@field public last_delivery_tick int

@@ -81,8 +81,8 @@ function remove_manifest(map_data, station, manifest, sign)
 			deliveries[item_hash] = nil
 		end
 	end
-	set_comb2(map_data, station)
 	station.deliveries_total = station.deliveries_total - 1
+	set_comb2(map_data, station)
 	if station.deliveries_total == 0 and band(station.display_state, 1) > 0 then
 		station.display_state = station.display_state - 1
 		update_display(map_data, station)
@@ -126,7 +126,7 @@ function create_delivery(map_data, r_station_id, p_station_id, train_id, manifes
 	local is_at_depot = remove_available_train(map_data, train_id, train)
 	--NOTE: we assume that the train is not being teleported at this time
 	--NOTE: set_manifest_schedule is allowed to cancel the delivery at the last second if applying the schedule to the train makes it lost and is_at_depot == false
-	if set_manifest_schedule(map_data, train.entity, depot.entity_stop, not train.use_any_depot, p_station.entity_stop, p_station.enable_inactive, r_station.entity_stop, r_station.enable_inactive, manifest, is_at_depot) then
+	if set_manifest_schedule(map_data, train.entity, depot.entity_stop, not train.use_any_depot, p_station.entity_stop, p_station, r_station.entity_stop, r_station, manifest, is_at_depot) then
 		local old_status = train.status
 		train.status = STATUS_TO_P
 		train.p_station_id = p_station_id
@@ -215,7 +215,8 @@ function create_manifest(map_data, r_station_id, p_station_id, train_id, primary
 		local item_type = v.signal.type or "item"
 		local item_hash = hash_signal(v.signal)
 		local r_item_count = v.count
-		local r_effective_item_count = r_item_count + (r_station.deliveries[item_hash] or 0)
+		local r_effective_adjustment = r_station.enable_manual_inventory and 0 or (r_station.deliveries[item_hash] or 0)
+		local r_effective_item_count = r_item_count + r_effective_adjustment
 		if r_effective_item_count < 0 and r_item_count < 0 then
 			local r_threshold = r_station.item_thresholds and r_station.item_thresholds[item_hash] or
 				r_station.r_threshold
@@ -755,7 +756,8 @@ local function tick_poll_station(map_data, mod_settings)
 			local item_hash = hash_signal(v.signal)
 			local item_type = v.signal.type or "item"
 			local item_count = v.count
-			local effective_item_count = item_count + (station.deliveries[item_hash] or 0)
+			local effective_adjustment = station.enable_manual_inventory and 0 or (station.deliveries[item_hash] or 0)
+			local effective_item_count = item_count + effective_adjustment
 
 			-- For each item in the combinator input, check if we should provide or request the given item. Requesting takes priority.
 			local is_not_requesting = true
