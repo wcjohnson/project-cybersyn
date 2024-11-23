@@ -41,7 +41,7 @@ local styles = data.raw["gui-style"]["default"]
 -- BUTTON STYLES
 
 -- smaller flib slot buttons
-for _, color in ipairs({ "default", "red", "green", "blue" }) do
+for _, color in ipairs({ "default", "red", "green", "blue", "orange" }) do
   styles["ltnm_small_slot_button_" .. color] = {
     type = "button_style",
     parent = "flib_slot_button_" .. color,
@@ -290,6 +290,16 @@ local default_orange_color = {
   r = 255,
   g = 128,
   b = 0
+}
+
+styles.ltnm_label_signal_count = {
+  type = "label_style",
+  parent = "count_label",
+  size = {36, 36},
+  horizontal_align = "right",
+  vertical_align = "bottom",
+  right_padding = 6,
+  parent_hovered_font_color = { 1, 1, 1 }
 }
 
 local hovered_label_color = {
