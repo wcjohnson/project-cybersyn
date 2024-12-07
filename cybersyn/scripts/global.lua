@@ -1,11 +1,21 @@
 --By Mami
+
+---@alias Cybersyn.UnitNumber uint A Factorio unit number uniquely associated to a `LuaEntity`
+
+---@alias Cybersyn.PlayerIndex uint A Factorio player index.
+
+---@alias Cybersyn.UnitNumberSet {[Cybersyn.UnitNumber]: true} A set of Factorio entities indexed by their unit number.
+
 ---@class MapData
 ---@field public total_ticks uint
+---@field public combinators {[Cybersyn.UnitNumber]: Cybersyn.Combinator.StatefulRef} Collection of all Cybernetic combinators in the save, indexed by their unit number.
+---@field public open_combinators {[Cybersyn.PlayerIndex]: Cybersyn.Combinator.GhostRef?} For each player, if they have the combinator GUI open, the combinator they are viewing with the GUI.
+---@field public train_stops {[Cybersyn.UnitNumber]: Cybersyn.TrainStop} Collection of all train stops with at least one Cybersyn combinator near them.
 ---@field public layout_top_id uint
----@field public to_comb {[uint]: LuaEntity}
----@field public to_comb_params {[uint]: ArithmeticCombinatorParameters}
----@field public to_output {[uint]: LuaEntity}
----@field public to_stop {[uint]: LuaEntity}
+---@field public to_comb {[uint]: LuaEntity} Deprecated. Legacy combinator cache.
+---@field public to_comb_params {[uint]: ArithmeticCombinatorParameters} Deprecated. Legacy combinator cache.
+---@field public to_output {[uint]: LuaEntity} Deprecated. Legacy combinator cache.
+---@field public to_stop {[uint]: LuaEntity} Deprecated. Legacy combinator cache.
 ---@field public stations {[uint]: Station}
 ---@field public active_station_ids uint[]
 ---@field public warmup_station_ids uint[]
@@ -25,6 +35,24 @@
 ---@field public active_alerts {[uint]: {[1]: LuaTrain, [2]: int}}?
 ---@field public manager Manager
 ---@field public perf_cache PerfCache -- This gets reset to an empty table on migration change
+
+---@class Cybersyn.TrainStop State vector of a train stop that has at least one Cybersyn combinator near it.
+---@field public stop LuaEntity The train stop entity.
+---@field public combinators Cybersyn.UnitNumberSet Set of all combinators related to this train stop.
+---@field public type Cybersyn.TrainStopType The type of train stop.
+
+---@class (exact) Cybersyn.Combinator.GhostRef Opaque pointer to a cybernetic combinator OR the ghost of a combinator. Does not include any data that depends on the live game state of the combinator. Can be "downcast" to a `Cybersyn.Combinator.StatefulRef` using `combinator_api.to_stateful_ref`.
+---@field public legacy? LuaEntity The legacy arithmetic combinator, or its ghost.
+
+---@class (exact) Cybersyn.Combinator.StatefulRef: Cybersyn.Combinator.GhostRef Opaque pointer to the full data of a built cybernetic combinator.
+---@field public output? LuaEntity The hidden output constant combinator, if it exists.
+---@field public stop? LuaEntity The train stop associated to this combinator, if it exists and is known.
+
+-- TODO: factor down into combinator_api
+---@class (exact) Cybersyn.Combinator.Settings: Cybersyn.Combinator.GhostRef Data enabling access to settings on a cybernetic combinator or ghost.
+---@field public legacy_control_behavior LuaArithmeticCombinatorControlBehavior? The legacy control behavior of the combinator, if it is a legacy combinator.
+---@field public legacy_parameters ArithmeticCombinatorParameters? The legacy parameters of the combinator, if it is a legacy combinator.
+---@field public map_data MapData Access to global storage, in the event we implement settings that need it for some reason.
 
 ---@class PerfCache
 ---@field public se_get_space_elevator_name {}?
@@ -158,6 +186,9 @@ function init_global()
 		all_p_stations = {},
 		all_names = {},
 	}
+	storage.combinators = {}
+	storage.open_combinators = {}
+	storage.train_stops = {}
 	storage.to_comb = {}
 	storage.to_comb_params = {}
 	storage.to_output = {}

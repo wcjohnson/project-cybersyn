@@ -1,5 +1,15 @@
 --By Mami
 
+---@enum Cybersyn.TrainStopType
+TrainStopType = {
+	UNKNOWN = 0,
+	STATION = 1,
+	DEPOT = 2,
+	REFUELER = 3,
+}
+
+STOP_COMBINATOR_SEARCH_RADIUS = 2
+
 MISSING_TRAIN_NAME = "cybersyn-missing-train"
 LOST_TRAIN_NAME = "cybersyn-lost-train"
 NONEMPTY_TRAIN_NAME = "cybersyn-nonempty-train"

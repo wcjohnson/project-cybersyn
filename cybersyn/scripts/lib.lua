@@ -1,4 +1,5 @@
 local util = require "__core__.lualib.util"
+local table_insert = table.insert
 
 --By Mami
 ---@param v string
@@ -93,4 +94,35 @@ function format_signal_count(count)
 			abs >= 1e6 and si_format(1e6, "M") or
 			abs >= 1e3 and si_format(1e3, "k") or
 			tostring(count)
+end
+
+--- Map an array into an array using a mapping function.
+---@generic I
+---@generic O
+---@param array I[]
+---@param fn fun(value: I, index: uint): O?
+---@return O[]
+function map(array, fn)
+	local new_array = {}
+	for i, v in ipairs(array) do
+		local x = fn(v, i)
+		if x ~= nil then table_insert(new_array, x) end
+	end
+	return new_array
+end
+
+--- Map a table into an array using a mapping function.
+---@generic K
+---@generic V
+---@generic T
+---@param tbl table<K, V>
+---@param fn fun(value: V, key: K): T?
+---@return T[]
+function tmap(tbl, fn)
+	local array = {}
+	for k, v in pairs(tbl) do
+		local x = fn(v, k)
+		if x ~= nil then table_insert(array, x) end
+	end
+	return array
 end
