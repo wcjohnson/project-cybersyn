@@ -143,4 +143,11 @@ data:extend({
 	--  default_value = 50,
 	--  order = "eb",
 	--},
+	{
+		type = "bool-setting",
+		name = "cybersyn-enable-debug-overlay",
+		setting_type = "runtime-global",
+		order = "da",
+		default_value = false,
+	},
 })

@@ -12,6 +12,9 @@ combinator_entity.radius_visualisation_specification = {
 	distance = 1.5,
 }
 combinator_entity.active_energy_usage = "10kW"
+local flags = combinator_entity.flags or {}
+table.insert(flags, "get-by-unit-number")
+combinator_entity.flags = flags
 
 if mods["nullius"] then
 	combinator_entity.localised_name = { "entity-name.cybersyn-combinator" }
@@ -51,7 +54,7 @@ combinator_entity.minus_symbol_sprites = create_combinator_display(CYBERSYN_DISP
 combinator_entity.divide_symbol_sprites = create_combinator_display(CYBERSYN_DISPLAYS, 2, 0)
 combinator_entity.modulo_symbol_sprites = create_combinator_display(CYBERSYN_DISPLAYS, 3, 0)
 combinator_entity.power_symbol_sprites = create_combinator_display(CYBERSYN_DISPLAYS, 0, 1)
-combinator_entity.left_shift_symbol_sprites = create_combinator_display(FACTORIO_DISPLAYS, 1, 1)  -- green '>'
+combinator_entity.left_shift_symbol_sprites = create_combinator_display(FACTORIO_DISPLAYS, 1, 1) -- green '>'
 combinator_entity.right_shift_symbol_sprites = create_combinator_display(CYBERSYN_DISPLAYS, 2, 1)
 combinator_entity.multiply_symbol_sprites = combinator_entity.divide_symbol_sprites
 

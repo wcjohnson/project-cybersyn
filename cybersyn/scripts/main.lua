@@ -226,138 +226,155 @@ end
 ---@param tags Tags?
 ---@return string? op
 function combinator_build_init(map_data, comb, tags)
-	local control = get_comb_control(comb)
-	local params = control.parameters
-	local op = params.operation
+	-- LORD: legacy code, be sure to account for this elsewhere
 
-	if op == MODE_DEFAULT then
-		op = MODE_PRIMARY_IO
-		params.operation = op
-		params.first_signal = NETWORK_SIGNAL_DEFAULT
-		control.parameters = params
-	elseif op ~= MODE_PRIMARY_IO and op ~= MODE_SECONDARY_IO and op ~= MODE_DEPOT and op ~= MODE_REFUELER and op ~= MODE_WAGON then
-		op = MODE_PRIMARY_IO
-		params.operation = op
-		control.parameters = params
-	end
+	-- local control = get_comb_control(comb)
+	-- local params = control.parameters
+	-- local op = params.operation
 
-	local unit_number = comb.unit_number --[[@as uint]]
+	-- if op == MODE_DEFAULT then
+	-- 	op = MODE_PRIMARY_IO
+	-- 	params.operation = op
+	-- 	params.first_signal = NETWORK_SIGNAL_DEFAULT
+	-- 	control.parameters = params
+	-- elseif op ~= MODE_PRIMARY_IO and op ~= MODE_SECONDARY_IO and op ~= MODE_DEPOT and op ~= MODE_REFUELER and op ~= MODE_WAGON then
+	-- 	op = MODE_PRIMARY_IO
+	-- 	params.operation = op
+	-- 	control.parameters = params
+	-- end
 
-	if tags and tags.ghost_unit_number then
-		local old_unit_number = tags.ghost_unit_number
-		map_data.to_comb[old_unit_number] = nil
-		map_data.to_comb_params[old_unit_number] = nil
-	end
+	-- local unit_number = comb.unit_number --[[@as uint]]
 
-	map_data.to_comb[unit_number] = comb
-	map_data.to_comb_params[unit_number] = params
+	-- if tags and tags.ghost_unit_number then
+	-- 	local old_unit_number = tags.ghost_unit_number
+	-- 	map_data.to_comb[old_unit_number] = nil
+	-- 	map_data.to_comb_params[old_unit_number] = nil
+	-- end
 
-	return op
+	-- map_data.to_comb[unit_number] = comb
+	-- map_data.to_comb_params[unit_number] = params
+
+	-- return op
 end
 
 ---@param map_data MapData
 ---@param comb LuaEntity
 ---@param tags Tags?
 local function on_combinator_built(map_data, comb, tags)
-	local pos_x = comb.position.x
-	local pos_y = comb.position.y
-
+	-- TODO: should this be before or after the combinator state construction?
 	if tags and tags.ghost_unit_number then
-		gui_entity_destroyed(tags.ghost_unit_number --[[@as integer]], true)
+		raise_combinator_ghost_revived(tags.ghost_unit_number, comb)
 	end
 
-	local search_area
-	if comb.direction == defines.direction.north or comb.direction == defines.direction.south then
-		search_area = {
-			{ pos_x - 1.5, pos_y - 2 },
-			{ pos_x + 1.5, pos_y + 2 },
-		}
-	else
-		search_area = {
-			{ pos_x - 2, pos_y - 1.5 },
-			{ pos_x + 2, pos_y + 1.5 },
-		}
-	end
-	local stop = nil
-	local rail = nil
-	local entities = comb.surface.find_entities_filtered({ area = search_area, name = { "train-stop", "straight-rail" } })
-	for _, cur_entity in pairs(entities) do
-		if cur_entity.valid then
-			if cur_entity.name == "train-stop" then
-				--NOTE: if there are multiple stops we take the later one
-				stop = cur_entity
-			elseif cur_entity.type == "straight-rail" then
-				rail = cur_entity
-			end
-		end
-	end
+	combinator_api.create_combinator(comb)
 
-	local out = comb.surface.create_entity({
-		name = COMBINATOR_OUT_NAME,
-		position = comb.position,
-		force = comb.force,
-	})
-	assert(out, "cybersyn: could not spawn combinator controller")
-	local comb_red = comb.get_wire_connector(defines.wire_connector_id.combinator_output_red, true)
-	local out_red = out.get_wire_connector(defines.wire_connector_id.circuit_red, true)
-	out_red.connect_to(comb_red, false, defines.wire_origin.script)
+	-- LORD: legacy code, replicate functionality in event bindings.
+	-- local pos_x = comb.position.x
+	-- local pos_y = comb.position.y
 
-	local comb_green = comb.get_wire_connector(defines.wire_connector_id.combinator_output_green, true)
-	local out_green = out.get_wire_connector(defines.wire_connector_id.circuit_green, true)
-	out_green.connect_to(comb_green, false, defines.wire_origin.script)
+	-- if tags and tags.ghost_unit_number then
+	-- 	gui_entity_destroyed(tags.ghost_unit_number --[[@as integer]], true)
+	-- end
 
-	local op = combinator_build_init(map_data, comb, tags)
+	-- local search_area
+	-- if comb.direction == defines.direction.north or comb.direction == defines.direction.south then
+	-- 	search_area = {
+	-- 		{ pos_x - 1.5, pos_y - 2 },
+	-- 		{ pos_x + 1.5, pos_y + 2 },
+	-- 	}
+	-- else
+	-- 	search_area = {
+	-- 		{ pos_x - 2, pos_y - 1.5 },
+	-- 		{ pos_x + 2, pos_y + 1.5 },
+	-- 	}
+	-- end
+	-- local stop = nil
+	-- local rail = nil
+	-- local entities = comb.surface.find_entities_filtered({ area = search_area, name = { "train-stop", "straight-rail" } })
+	-- for _, cur_entity in pairs(entities) do
+	-- 	if cur_entity.valid then
+	-- 		if cur_entity.name == "train-stop" then
+	-- 			--NOTE: if there are multiple stops we take the later one
+	-- 			stop = cur_entity
+	-- 		elseif cur_entity.type == "straight-rail" then
+	-- 			rail = cur_entity
+	-- 		end
+	-- 	end
+	-- end
 
-	local unit_number = comb.unit_number --[[@as uint]]
-	map_data.to_output[unit_number] = out
-	map_data.to_stop[unit_number] = stop
+	-- local out = comb.surface.create_entity({
+	-- 	name = COMBINATOR_OUT_NAME,
+	-- 	position = comb.position,
+	-- 	force = comb.force,
+	-- })
+	-- assert(out, "cybersyn: could not spawn combinator controller")
+	-- local comb_red = comb.get_wire_connector(defines.wire_connector_id.combinator_output_red, true)
+	-- local out_red = out.get_wire_connector(defines.wire_connector_id.circuit_red, true)
+	-- out_red.connect_to(comb_red, false, defines.wire_origin.script)
 
-	if op == MODE_WAGON then
-		if rail then
-			update_stop_from_rail(map_data, rail, nil, true)
-		end
-	elseif stop then
-		local id = stop.unit_number --[[@as uint]]
-		local station = map_data.stations[id]
-		local depot = map_data.depots[id]
-		local refueler = map_data.refuelers[id]
-		if op == MODE_DEPOT then
-			if refueler then
-				on_refueler_broken(map_data, id, refueler)
-			end
-			if not station and not depot then
-				on_depot_built(map_data, stop, comb)
-			end
-		elseif op == MODE_REFUELER then
-			if not station and not depot and not refueler then
-				on_refueler_built(map_data, stop, comb)
-			end
-		elseif op == MODE_SECONDARY_IO then
-			if station and not station.entity_comb2 then
-				station.entity_comb2 = comb
-				queue_station_for_combinator_update(map_data, id)
-			end
-		elseif op == MODE_PRIMARY_IO then
-			if refueler then
-				on_refueler_broken(map_data, id, refueler)
-			end
-			if depot then
-				on_depot_broken(map_data, id, depot)
-			end
-			if not station then
-				local comb2 = search_for_station_combinator(map_data, stop, MODE_SECONDARY_IO, comb)
-				on_station_built(map_data, stop, comb, comb2)
-			end
-		end
-	end
+	-- local comb_green = comb.get_wire_connector(defines.wire_connector_id.combinator_output_green, true)
+	-- local out_green = out.get_wire_connector(defines.wire_connector_id.circuit_green, true)
+	-- out_green.connect_to(comb_green, false, defines.wire_origin.script)
+
+	-- local op = combinator_build_init(map_data, comb, tags)
+
+	-- local unit_number = comb.unit_number --[[@as uint]]
+	-- map_data.to_output[unit_number] = out
+	-- map_data.to_stop[unit_number] = stop
+
+	-- if op == MODE_WAGON then
+	-- 	if rail then
+	-- 		update_stop_from_rail(map_data, rail, nil, true)
+	-- 	end
+	-- elseif stop then
+	-- 	local id = stop.unit_number --[[@as uint]]
+	-- 	local station = map_data.stations[id]
+	-- 	local depot = map_data.depots[id]
+	-- 	local refueler = map_data.refuelers[id]
+	-- 	if op == MODE_DEPOT then
+	-- 		if refueler then
+	-- 			on_refueler_broken(map_data, id, refueler)
+	-- 		end
+	-- 		if not station and not depot then
+	-- 			on_depot_built(map_data, stop, comb)
+	-- 		end
+	-- 	elseif op == MODE_REFUELER then
+	-- 		if not station and not depot and not refueler then
+	-- 			on_refueler_built(map_data, stop, comb)
+	-- 		end
+	-- 	elseif op == MODE_SECONDARY_IO then
+	-- 		if station and not station.entity_comb2 then
+	-- 			station.entity_comb2 = comb
+	-- 			queue_station_for_combinator_update(map_data, id)
+	-- 		end
+	-- 	elseif op == MODE_PRIMARY_IO then
+	-- 		if refueler then
+	-- 			on_refueler_broken(map_data, id, refueler)
+	-- 		end
+	-- 		if depot then
+	-- 			on_depot_broken(map_data, id, depot)
+	-- 		end
+	-- 		if not station then
+	-- 			local comb2 = search_for_station_combinator(map_data, stop, MODE_SECONDARY_IO, comb)
+	-- 			on_station_built(map_data, stop, comb, comb2)
+	-- 		end
+	-- 	end
+	-- end
 end
-
 
 ---@param map_data MapData
 ---@param comb LuaEntity
 local function on_combinator_ghost_built(map_data, comb)
-	combinator_build_init(map_data, comb)
-	comb.tags = { ghost_unit_number = comb.unit_number }
+	local t = comb.tags or {}
+	t.ghost_unit_number = comb.unit_number
+	comb.tags = t
+	raise_combinator_ghost_created(combinator_api.to_ephemeral_reference(comb))
+end
+
+---@param map_data MapData
+---@param comb LuaEntity
+function on_combinator_ghost_broken(map_data, comb)
+	raise_combinator_ghost_destroyed(combinator_api.to_ephemeral_reference(comb))
 end
 
 ---@param map_data MapData
@@ -372,32 +389,34 @@ end
 --Returns 4 if `comb` defines a refueler.
 --Returns 0 if `comb` is not a core component of any entity.
 local function comb_to_internal_entity(map_data, comb, unit_number)
-	local stop = map_data.to_stop[unit_number]
-	if stop and stop.valid then
-		local id = stop.unit_number --[[@as uint]]
-		local station = map_data.stations[id]
-		if station then
-			if station.entity_comb1 == comb then
-				return 1, id, station, stop
-			elseif station.entity_comb2 == comb then
-				return 2, id, station, stop
-			end
-		else
-			local depot = map_data.depots[id]
-			if depot then
-				if depot.entity_comb == comb then
-					return 3, id, depot, stop
-				end
-			else
-				local refueler = map_data.refuelers[id]
-				if refueler then
-					if refueler.entity_comb == comb then
-						return 4, id, refueler, stop
-					end
-				end
-			end
-		end
-	end
+	-- LORD: temp disabled, should be obsolete.
+
+	-- local stop = map_data.to_stop[unit_number]
+	-- if stop and stop.valid then
+	-- 	local id = stop.unit_number --[[@as uint]]
+	-- 	local station = map_data.stations[id]
+	-- 	if station then
+	-- 		if station.entity_comb1 == comb then
+	-- 			return 1, id, station, stop
+	-- 		elseif station.entity_comb2 == comb then
+	-- 			return 2, id, station, stop
+	-- 		end
+	-- 	else
+	-- 		local depot = map_data.depots[id]
+	-- 		if depot then
+	-- 			if depot.entity_comb == comb then
+	-- 				return 3, id, depot, stop
+	-- 			end
+	-- 		else
+	-- 			local refueler = map_data.refuelers[id]
+	-- 			if refueler then
+	-- 				if refueler.entity_comb == comb then
+	-- 					return 4, id, refueler, stop
+	-- 				end
+	-- 			end
+	-- 		end
+	-- 	end
+	-- end
 	return 0, 0, nil, nil
 end
 
@@ -414,253 +433,254 @@ end
 
 ---@param map_data MapData
 ---@param comb LuaEntity
----@param skip_gui_events boolean?
-function on_combinator_broken(map_data, comb, skip_gui_events)
-	--NOTE: we do not check for wagon manifest combinators and update their stations, it is assumed they will be lazy deleted later
-	---@type uint
-	local comb_id = comb.unit_number
+function on_combinator_broken(map_data, comb)
+	combinator_api.destroy_combinator(comb.unit_number)
 
-	if not skip_gui_events then
-		gui_entity_destroyed(comb_id, false)
-	end
+	-- LORD: legacy code, replicate functionality in event bindings.
 
-	local out = map_data.to_output[comb_id]
+	-- if not skip_gui_events then
+	-- 	gui_entity_destroyed(comb_id, false)
+	-- end
 
-	local type, id, entity, stop = comb_to_internal_entity(map_data, comb, comb_id)
-	if type == 1 then
-		on_station_broken(map_data, id, entity --[[@as Station]])
-		on_stop_built_or_updated(map_data, stop --[[@as LuaEntity]], comb)
-	elseif type == 2 then
-		local station = entity --[[@as Station]]
-		station.entity_comb2 = search_for_station_combinator(map_data, stop --[[@as LuaEntity]], MODE_SECONDARY_IO, comb)
-		queue_station_for_combinator_update(map_data, id)
-	elseif type == 3 then
-		on_depot_broken(map_data, id, entity --[[@as Depot]])
-		on_stop_built_or_updated(map_data, stop --[[@as LuaEntity]], comb)
-	elseif type == 4 then
-		on_refueler_broken(map_data, id, entity --[[@as Refueler]])
-		on_stop_built_or_updated(map_data, stop --[[@as LuaEntity]], comb)
-	end
+	-- local out = map_data.to_output[comb_id]
 
-	if out and out.valid then
-		out.destroy()
-	end
-	map_data.to_comb[comb_id] = nil
-	map_data.to_output[comb_id] = nil
-	map_data.to_stop[comb_id] = nil
-	map_data.to_comb_params[comb_id] = nil
-end
+	-- local type, id, entity, stop = comb_to_internal_entity(map_data, comb, comb_id)
+	-- if type == 1 then
+	-- 	on_station_broken(map_data, id, entity --[[@as Station]])
+	-- 	on_stop_built_or_updated(map_data, stop --[[@as LuaEntity]], comb)
+	-- elseif type == 2 then
+	-- 	local station = entity --[[@as Station]]
+	-- 	station.entity_comb2 = search_for_station_combinator(map_data, stop --[[@as LuaEntity]], MODE_SECONDARY_IO, comb)
+	-- 	queue_station_for_combinator_update(map_data, id)
+	-- elseif type == 3 then
+	-- 	on_depot_broken(map_data, id, entity --[[@as Depot]])
+	-- 	on_stop_built_or_updated(map_data, stop --[[@as LuaEntity]], comb)
+	-- elseif type == 4 then
+	-- 	on_refueler_broken(map_data, id, entity --[[@as Refueler]])
+	-- 	on_stop_built_or_updated(map_data, stop --[[@as LuaEntity]], comb)
+	-- end
 
----@param map_data MapData
----@param comb LuaEntity
----@param skip_gui_events boolean?
-function on_combinator_ghost_broken(map_data, comb, skip_gui_events)
-	---@type uint
-	local comb_id = comb.unit_number
-
-	if not skip_gui_events then
-		gui_entity_destroyed(comb_id, true)
-	end
-
-	map_data.to_comb[comb_id] = nil
-	map_data.to_comb_params[comb_id] = nil
+	-- if out and out.valid then
+	-- 	out.destroy()
+	-- end
+	-- map_data.to_comb[comb_id] = nil
+	-- map_data.to_output[comb_id] = nil
+	-- map_data.to_stop[comb_id] = nil
+	-- map_data.to_comb_params[comb_id] = nil
 end
 
 ---@param map_data MapData
 ---@param comb LuaEntity
 ---@param reset_display boolean?
 function combinator_update(map_data, comb, reset_display)
-	local unit_number = comb.unit_number --[[@as uint]]
-	local control = get_comb_control(comb)
-	local params = control.parameters
-	local old_params = map_data.to_comb_params[unit_number]
-	local has_changed = false
-	local type, id, entity = nil, 0, nil
-	local is_ghost = comb.name == "entity-ghost"
+	-- LORD: temp disabled, should be obsolete
 
-	if (old_params == nil) then
-		--should be generated after this tick, but in case it persists it is better to let the player know to replace it
-		game.print("cybersyn combinator lacking internal data @ " .. comb.gps_tag)
-	end
+	-- local unit_number = comb.unit_number --[[@as uint]]
+	-- local control = get_comb_control(comb)
+	-- local params = control.parameters
+	-- local old_params = map_data.to_comb_params[unit_number]
+	-- local has_changed = false
+	-- local type, id, entity = nil, 0, nil
+	-- local is_ghost = comb.name == "entity-ghost"
 
-	local op = params.operation
-	--handle the combinator's display, if it is part of a station
-	if op == MODE_PRIMARY_IO or op == MODE_PRIMARY_IO_ACTIVE or op == MODE_PRIMARY_IO_FAILED_REQUEST then
-		--the follow is only present to fix combinators that have been copy-pasted by blueprint with the wrong operation
-		local set_control_params = true
+	-- if (old_params == nil) then
+	-- 	--should be generated after this tick, but in case it persists it is better to let the player know to replace it
+	-- 	game.print("cybersyn combinator lacking internal data @ " .. comb.gps_tag)
+	-- end
 
-		if reset_display then
-			type, id, entity = comb_to_internal_entity(map_data, comb, unit_number)
+	-- local op = params.operation
+	-- --handle the combinator's display, if it is part of a station
+	-- if op == MODE_PRIMARY_IO or op == MODE_PRIMARY_IO_ACTIVE or op == MODE_PRIMARY_IO_FAILED_REQUEST then
+	-- 	--the follow is only present to fix combinators that have been copy-pasted by blueprint with the wrong operation
+	-- 	local set_control_params = true
 
-			if type == 1 then
-				local station = entity --[[@as Station]]
-				if station.display_state == 0 then
-					params.operation = MODE_PRIMARY_IO
-				elseif station.display_state % 2 == 1 then
-					params.operation = MODE_PRIMARY_IO_ACTIVE
-				else
-					params.operation = MODE_PRIMARY_IO_FAILED_REQUEST
-				end
-				set_control_params = false
-				control.parameters = params
-			end
-		end
-		--make sure only MODE_PRIMARY_IO gets stored on map_data.to_comb_params
-		params.operation = MODE_PRIMARY_IO
-		if set_control_params then
-			control.parameters = params
-		end
-	end
+	-- 	if reset_display then
+	-- 		type, id, entity = comb_to_internal_entity(map_data, comb, unit_number)
 
-	if old_params ~= nil and params.operation ~= old_params.operation then
-		--NOTE: This is rather dangerous, we may need to actually implement operation changing
-		if is_ghost then
-			on_combinator_ghost_broken(map_data, comb, true)
-			on_combinator_ghost_built(map_data, comb)
-		else
-			on_combinator_broken(map_data, comb, true)
-			on_combinator_built(map_data, comb)
-			-- If anyone actually needs notification of changed ghosts, perhaps a new event can be added for that
-			interface_raise_combinator_changed(comb, old_params)
-		end
-		return
-	end
+	-- 		if type == 1 then
+	-- 			local station = entity --[[@as Station]]
+	-- 			if station.display_state == 0 then
+	-- 				params.operation = MODE_PRIMARY_IO
+	-- 			elseif station.display_state % 2 == 1 then
+	-- 				params.operation = MODE_PRIMARY_IO_ACTIVE
+	-- 			else
+	-- 				params.operation = MODE_PRIMARY_IO_FAILED_REQUEST
+	-- 			end
+	-- 			set_control_params = false
+	-- 			control.parameters = params
+	-- 		end
+	-- 	end
+	-- 	--make sure only MODE_PRIMARY_IO gets stored on map_data.to_comb_params
+	-- 	params.operation = MODE_PRIMARY_IO
+	-- 	if set_control_params then
+	-- 		control.parameters = params
+	-- 	end
+	-- end
 
-	if is_ghost then return end
+	-- if old_params ~= nil and params.operation ~= old_params.operation then
+	-- 	--NOTE: This is rather dangerous, we may need to actually implement operation changing
+	-- 	if is_ghost then
+	-- 		on_combinator_ghost_broken(map_data, comb, true)
+	-- 		on_combinator_ghost_built(map_data, comb)
+	-- 	else
+	-- 		on_combinator_broken(map_data, comb, true)
+	-- 		on_combinator_built(map_data, comb)
+	-- 		-- If anyone actually needs notification of changed ghosts, perhaps a new event can be added for that
+	-- 		interface_raise_combinator_changed(comb, old_params)
+	-- 	end
+	-- 	return
+	-- end
 
-	local new_signal = params.first_signal
-	local old_signal = old_params ~= nil and old_params.first_signal
-	local new_network = new_signal and new_signal.name or nil
-	local old_network = old_signal and old_signal.name or nil
-	if new_network ~= old_network then
-		has_changed = true
+	-- if is_ghost then return end
 
-		if type == nil then
-			type, id, entity = comb_to_internal_entity(map_data, comb, unit_number)
-		end
-		if type == 1 or type == 2 then
-			--NOTE: these updates have to be queued to occur at tick init since central planning is expecting them not to change between ticks
-			queue_station_for_combinator_update(map_data, id)
-		elseif type == 3 then
-			local depot = entity --[[@as Depot]]
-			local train_id = depot.available_train_id
-			if train_id then
-				local train = map_data.trains[train_id]
-				remove_available_train(map_data, train_id, train)
-				add_available_train_to_depot(map_data, mod_settings, train_id, train, id, depot)
-				interface_raise_train_status_changed(train_id, STATUS_D, STATUS_D)
-			end
-		elseif type == 4 then
-			set_refueler_from_comb(map_data, mod_settings, id, entity --[[@as Refueler]])
-		end
-	end
+	-- local new_signal = params.first_signal
+	-- local old_signal = old_params ~= nil and old_params.first_signal
+	-- local new_network = new_signal and new_signal.name or nil
+	-- local old_network = old_signal and old_signal.name or nil
+	-- if new_network ~= old_network then
+	-- 	has_changed = true
 
-	if old_params ~= nil and params.second_constant ~= old_params.second_constant then
-		has_changed = true
+	-- 	if type == nil then
+	-- 		type, id, entity = comb_to_internal_entity(map_data, comb, unit_number)
+	-- 	end
+	-- 	if type == 1 or type == 2 then
+	-- 		--NOTE: these updates have to be queued to occur at tick init since central planning is expecting them not to change between ticks
+	-- 		queue_station_for_combinator_update(map_data, id)
+	-- 	elseif type == 3 then
+	-- 		local depot = entity --[[@as Depot]]
+	-- 		local train_id = depot.available_train_id
+	-- 		if train_id then
+	-- 			local train = map_data.trains[train_id]
+	-- 			remove_available_train(map_data, train_id, train)
+	-- 			add_available_train_to_depot(map_data, mod_settings, train_id, train, id, depot)
+	-- 			interface_raise_train_status_changed(train_id, STATUS_D, STATUS_D)
+	-- 		end
+	-- 	elseif type == 4 then
+	-- 		set_refueler_from_comb(map_data, mod_settings, id, entity --[[@as Refueler]])
+	-- 	end
+	-- end
 
-		if type == nil then
-			type, id, entity = comb_to_internal_entity(map_data, comb, unit_number)
-		end
-		--depots do not cache any combinator values so we don't have to update them here
-		if type == 1 or type == 2 then
-			--NOTE: these updates have to be queued to occur at tick init since central planning is expecting them not to change between ticks
-			queue_station_for_combinator_update(map_data, id)
-		elseif type == 4 then
-			local refueler = entity --[[@as Refueler]]
-			local pre = refueler.allows_all_trains
-			set_refueler_from_comb(map_data, mod_settings, id, refueler)
-			if refueler.allows_all_trains ~= pre then
-				update_stop_if_auto(map_data, refueler, false)
-			end
-		end
-	end
+	-- if old_params ~= nil and params.second_constant ~= old_params.second_constant then
+	-- 	has_changed = true
 
-	if has_changed then
-		map_data.to_comb_params[unit_number] = params
-		if old_params ~= nil then
-			interface_raise_combinator_changed(comb, old_params)
-		end
-	end
+	-- 	if type == nil then
+	-- 		type, id, entity = comb_to_internal_entity(map_data, comb, unit_number)
+	-- 	end
+	-- 	--depots do not cache any combinator values so we don't have to update them here
+	-- 	if type == 1 or type == 2 then
+	-- 		--NOTE: these updates have to be queued to occur at tick init since central planning is expecting them not to change between ticks
+	-- 		queue_station_for_combinator_update(map_data, id)
+	-- 	elseif type == 4 then
+	-- 		local refueler = entity --[[@as Refueler]]
+	-- 		local pre = refueler.allows_all_trains
+	-- 		set_refueler_from_comb(map_data, mod_settings, id, refueler)
+	-- 		if refueler.allows_all_trains ~= pre then
+	-- 			update_stop_if_auto(map_data, refueler, false)
+	-- 		end
+	-- 	end
+	-- end
+
+	-- if has_changed then
+	-- 	map_data.to_comb_params[unit_number] = params
+	-- 	if old_params ~= nil then
+	-- 		interface_raise_combinator_changed(comb, old_params)
+	-- 	end
+	-- end
 end
 
 ---@param map_data MapData
 ---@param stop LuaEntity
 ---@param comb_forbidden LuaEntity?
 function on_stop_built_or_updated(map_data, stop, comb_forbidden)
+	-- LORD: legacy code, bind to downstream events to determine whether
+	-- a stop is a station, depot, or refueler
+
 	--NOTE: this stop must not be a part of any station before entering this function
-	local pos_x = stop.position.x
-	local pos_y = stop.position.y
+	-- local pos_x = stop.position.x
+	-- local pos_y = stop.position.y
 
-	local search_area = {
-		{ pos_x - 2, pos_y - 2 },
-		{ pos_x + 2, pos_y + 2 },
-	}
-	local comb2 = nil
-	local comb1 = nil
-	local depot_comb = nil
-	local refueler_comb = nil
-	local entities = stop.surface.find_entities_filtered({ area = search_area, name = COMBINATOR_NAME })
-	for _, entity in pairs(entities) do
-		if entity.valid and entity ~= comb_forbidden then
-			local id = entity.unit_number --[[@as uint]]
-			local adj_stop = map_data.to_stop[id]
-			if adj_stop == nil or adj_stop == stop then
-				map_data.to_stop[id] = stop
-				local param = get_comb_params(entity)
-				local op = param.operation
-				if op == MODE_PRIMARY_IO then
-					comb1 = entity
-				elseif op == MODE_SECONDARY_IO then
-					comb2 = entity
-				elseif op == MODE_DEPOT then
-					depot_comb = entity
-				elseif op == MODE_REFUELER then
-					refueler_comb = entity
-				end
-			end
-		end
-	end
-	if comb1 then
-		on_station_built(map_data, stop, comb1, comb2)
-	elseif depot_comb then
-		on_depot_built(map_data, stop, depot_comb)
-	elseif refueler_comb then
-		on_refueler_built(map_data, stop, refueler_comb)
-	end
+	-- local search_area = {
+	-- 	{ pos_x - 2, pos_y - 2 },
+	-- 	{ pos_x + 2, pos_y + 2 },
+	-- }
+	-- local comb2 = nil
+	-- local comb1 = nil
+	-- local depot_comb = nil
+	-- local refueler_comb = nil
+	-- local entities = stop.surface.find_entities_filtered({ area = search_area, name = COMBINATOR_NAME })
+	-- for _, entity in pairs(entities) do
+	-- 	if entity.valid and entity ~= comb_forbidden then
+	-- 		local id = entity.unit_number --[[@as uint]]
+	-- 		local adj_stop = map_data.to_stop[id]
+	-- 		if adj_stop == nil or adj_stop == stop then
+	-- 			map_data.to_stop[id] = stop
+	-- 			local param = get_comb_params(entity)
+	-- 			local op = param.operation
+	-- 			if op == MODE_PRIMARY_IO then
+	-- 				comb1 = entity
+	-- 			elseif op == MODE_SECONDARY_IO then
+	-- 				comb2 = entity
+	-- 			elseif op == MODE_DEPOT then
+	-- 				depot_comb = entity
+	-- 			elseif op == MODE_REFUELER then
+	-- 				refueler_comb = entity
+	-- 			end
+	-- 		end
+	-- 	end
+	-- end
+	-- if comb1 then
+	-- 	on_station_built(map_data, stop, comb1, comb2)
+	-- elseif depot_comb then
+	-- 	on_depot_built(map_data, stop, depot_comb)
+	-- elseif refueler_comb then
+	-- 	on_refueler_built(map_data, stop, refueler_comb)
+	-- end
 end
+
 ---@param map_data MapData
----@param stop LuaEntity
-local function on_stop_broken(map_data, stop)
-	local pos_x = stop.position.x
-	local pos_y = stop.position.y
-
-	local search_area = {
-		{ pos_x - 2, pos_y - 2 },
-		{ pos_x + 2, pos_y + 2 },
-	}
-	local entities = stop.surface.find_entities_filtered({ area = search_area, name = COMBINATOR_NAME })
-	for _, entity in pairs(entities) do
-		if entity.valid and map_data.to_stop[entity.unit_number] == stop then
-			map_data.to_stop[entity.unit_number] = nil
-		end
-	end
-
-	local id = stop.unit_number --[[@as uint]]
-	local station = map_data.stations[id]
-	if station then
-		on_station_broken(map_data, id, station)
-	else
-		local depot = map_data.depots[id]
-		if depot then
-			on_depot_broken(map_data, id, depot)
-		else
-			local refueler = map_data.refuelers[id]
-			if refueler then
-				on_refueler_broken(map_data, id, refueler)
-			end
-		end
-	end
+---@param stop_entity LuaEntity
+local function on_stop_built(map_data, stop_entity)
+	stop_api.create_stop_if_nearby_combinator(stop_entity)
 end
+
+---@param map_data MapData
+---@param stop_entity LuaEntity
+local function on_stop_broken(map_data, stop_entity)
+	local stop_id = stop_entity.unit_number --[[@as uint]]
+	stop_api.destroy_stop(stop_id)
+
+	-- LORD: legacy code, verify event driven version is ported over
+	-- local pos_x = stop.position.x
+	-- local pos_y = stop.position.y
+
+	-- local search_area = {
+	-- 	{ pos_x - 2, pos_y - 2 },
+	-- 	{ pos_x + 2, pos_y + 2 },
+	-- }
+	-- local entities = stop.surface.find_entities_filtered({ area = search_area, name = COMBINATOR_NAME })
+	-- for _, entity in pairs(entities) do
+	-- 	if entity.valid and map_data.to_stop[entity.unit_number] == stop then
+	-- 		map_data.to_stop[entity.unit_number] = nil
+	-- 	end
+	-- end
+
+	-- local id = stop.unit_number --[[@as uint]]
+	-- local station = map_data.stations[id]
+	-- if station then
+	-- 	on_station_broken(map_data, id, station)
+	-- else
+	-- 	local depot = map_data.depots[id]
+	-- 	if depot then
+	-- 		on_depot_broken(map_data, id, depot)
+	-- 	else
+	-- 		local refueler = map_data.refuelers[id]
+	-- 		if refueler then
+	-- 			on_refueler_broken(map_data, id, refueler)
+	-- 		end
+	-- 	end
+	-- end
+end
+
 ---@param map_data MapData
 ---@param stop LuaEntity
 ---@param old_name string
@@ -685,6 +705,7 @@ local function on_stop_rename(map_data, stop, old_name)
 				elseif is_p and is_p_in_progress then
 					--train is attempting delivery to a stop that was renamed
 					local p_station = map_data.stations[train.p_station_id]
+					-- TODO: Volatile trains.
 					if not train.se_is_being_teleported then
 						rename_manifest_schedule(train.entity, p_station.entity_stop, old_name)
 					else
@@ -696,29 +717,15 @@ local function on_stop_rename(map_data, stop, old_name)
 	end
 end
 
-
----@param map_data MapData
-local function find_and_add_all_stations_from_nothing(map_data)
-	for _, surface in pairs(game.surfaces) do
-		local entities = surface.find_entities_filtered({ name = COMBINATOR_NAME })
-		for k, comb in pairs(entities) do
-			if comb.valid then
-				on_combinator_built(map_data, comb)
-			end
-		end
-	end
-end
-
-
 local function on_built(event)
 	local entity = event.entity or event.created_entity
 	if not entity or not entity.valid then return end
 
 	if entity.name == "train-stop" then
-		on_stop_built_or_updated(storage, entity)
-	elseif entity.name == COMBINATOR_NAME then
+		on_stop_built(storage, entity)
+	elseif COMBINATOR_ENTITY_NAMES_SET[entity.name] then
 		on_combinator_built(storage, entity, event.tags)
-	elseif entity.name == "entity-ghost" and entity.ghost_name == COMBINATOR_NAME then
+	elseif entity.name == "entity-ghost" and COMBINATOR_ENTITY_NAMES_SET[entity.ghost_name] then
 		on_combinator_ghost_built(storage, entity)
 	elseif entity.type == "inserter" then
 		update_stop_from_inserter(storage, entity)
@@ -731,15 +738,16 @@ local function on_built(event)
 		update_stop_from_rail(storage, entity)
 	end
 end
+
 local function on_broken(event)
 	local entity = event.entity
 	if not entity or not entity.valid then return end
 
 	if entity.name == "train-stop" then
 		on_stop_broken(storage, entity)
-	elseif entity.name == COMBINATOR_NAME then
+	elseif COMBINATOR_ENTITY_NAMES_SET[entity.name] then
 		on_combinator_broken(storage, entity)
-	elseif entity.name == "entity-ghost" and entity.ghost_name == COMBINATOR_NAME then
+	elseif entity.name == "entity-ghost" and COMBINATOR_ENTITY_NAMES_SET[entity.ghost_name] then
 		on_combinator_ghost_broken(storage, entity)
 	elseif entity.type == "inserter" then
 		update_stop_from_inserter(storage, entity, entity)
@@ -750,6 +758,7 @@ local function on_broken(event)
 		update_stop_from_pump(storage, entity, entity)
 	elseif entity.type == "straight-rail" or entity.type == "curved-rail" then
 		update_stop_from_rail(storage, entity, nil)
+		-- TODO: consider elevated rails
 	elseif entity.train then
 		local train_id = entity.train.id
 		local train = storage.trains[train_id]
@@ -758,6 +767,7 @@ local function on_broken(event)
 		end
 	end
 end
+
 local function on_rotate(event)
 	local entity = event.entity or event.created_entity
 	if not entity or not entity.valid then return end
@@ -765,27 +775,31 @@ local function on_rotate(event)
 	if entity.type == "inserter" then
 		update_stop_from_inserter(storage, entity)
 	end
+
+	-- LORD: handle rotating combinators; wagon combinators should bind to the
+	-- track they point towards if ambiguous.
 end
 
 local function on_surface_removed(event)
 	local surface = game.surfaces[event.surface_index]
 	if surface then
+		-- LORD: port to event based
 		local train_stops = surface.find_entities_filtered({ type = "train-stop" })
 		for _, entity in pairs(train_stops) do
 			if entity.valid and entity.name == "train-stop" then
 				on_stop_broken(storage, entity)
 			end
 		end
+		-- LORD: remove all combinators
 	end
 end
-
 
 local function on_paste(event)
 	local entity = event.destination
 	if not entity or not entity.valid then return end
 
-	if entity.name == COMBINATOR_NAME then
-		combinator_update(storage, entity, true)
+	if COMBINATOR_ENTITY_NAMES_SET[entity.name] then
+		raise_combinator_settings_written(combinator_api.to_ephemeral_reference(entity))
 	end
 end
 
@@ -810,10 +824,13 @@ local function grab_all_settings()
 	mod_settings.invert_sign = settings.global["cybersyn-invert-sign"].value --[[@as boolean]]
 	mod_settings.manager_ups = settings.global["cybersyn-manager-updates-per-second"].value --[[@as double]]
 	mod_settings.manager_enabled = settings.startup["cybersyn-manager-enabled"].value --[[@as boolean]]
+	mod_settings.enable_debug_overlay = settings.global["cybersyn-enable-debug-overlay"].value --[[@as boolean]]
 end
+
 local function register_tick()
 	script.on_nth_tick(nil)
 	--edge case catch to register both main and manager tick if they're scheduled to run on the same ticks
+	-- XXX: this is ludicrous, the manager should be a separate mod
 	if mod_settings.manager_enabled and mod_settings.manager_ups == mod_settings.tps and mod_settings.tps > DELTA then
 		local nth_tick = ceil(60 / mod_settings.tps) --[[@as uint]]
 		script.on_nth_tick(nth_tick, function()
@@ -835,11 +852,13 @@ local function register_tick()
 		end
 	end
 end
+
 local function on_settings_changed(event)
 	grab_all_settings()
 	if event.setting == "cybersyn-ticks-per-second" or event.setting == "cybersyn-manager-updates-per-second" then
 		register_tick()
 	end
+	raise_mod_settings_changed()
 	manager.on_runtime_mod_setting_changed(event)
 	interface_raise_on_mod_settings_changed(event)
 end
@@ -847,18 +866,19 @@ end
 
 local filter_built = {
 	{ filter = "name", name = "train-stop" },
-	{ filter = "name", name = COMBINATOR_NAME },
-	{ filter = "ghost", ghost_name = COMBINATOR_NAME },
 	{ filter = "type", type = "inserter" },
 	{ filter = "type", type = "pump" },
 	{ filter = "type", type = "straight-rail" },
 	{ filter = "type", type = "curved-rail" },
 	{ filter = "type", type = "loader-1x1" },
 }
+for _, name in ipairs(COMBINATOR_ENTITY_NAMES_ARRAY) do
+	table.insert(filter_built, { filter = "name", name = name })
+	table.insert(filter_built, { filter = "ghost", ghost_name = name })
+end
+
 local filter_broken = {
 	{ filter = "name", name = "train-stop" },
-	{ filter = "name", name = COMBINATOR_NAME },
-	{ filter = "ghost", name = COMBINATOR_NAME },
 	{ filter = "type", type = "inserter" },
 	{ filter = "type", type = "pump" },
 	{ filter = "type", type = "straight-rail" },
@@ -866,6 +886,11 @@ local filter_broken = {
 	{ filter = "type", type = "loader-1x1" },
 	{ filter = "rolling-stock" },
 }
+for _, name in ipairs(COMBINATOR_ENTITY_NAMES_ARRAY) do
+	table.insert(filter_broken, { filter = "name", name = name })
+	table.insert(filter_broken, { filter = "ghost", ghost_name = name })
+end
+
 local function main()
 	grab_all_settings()
 
@@ -884,8 +909,6 @@ local function main()
 			defines.events.on_entity_cloned,
 		}, on_built)
 
-	script.on_event(defines.events.on_player_rotated_entity, on_rotate)
-
 	script.on_event(defines.events.on_pre_player_mined_item, on_broken, filter_broken)
 	script.on_event(defines.events.on_robot_pre_mined, on_broken, filter_broken)
 	script.on_event(defines.events.on_entity_died, on_broken, filter_broken)
@@ -893,12 +916,12 @@ local function main()
 
 	script.on_event({ defines.events.on_pre_surface_deleted, defines.events.on_pre_surface_cleared }, on_surface_removed)
 
+	script.on_event(defines.events.on_player_rotated_entity, on_rotate)
 	script.on_event(defines.events.on_entity_settings_pasted, on_paste)
+	script.on_event(defines.events.on_entity_renamed, on_rename)
 
 	script.on_event(defines.events.on_train_created, on_train_built)
 	script.on_event(defines.events.on_train_changed_state, on_train_changed)
-
-	script.on_event(defines.events.on_entity_renamed, on_rename)
 
 	script.on_event(defines.events.on_runtime_mod_setting_changed, on_settings_changed)
 
@@ -917,6 +940,7 @@ local function main()
 		if MANAGER_ENABLED then
 			manager.on_init()
 		end
+		raise_game_on_init()
 	end)
 
 	script.on_configuration_changed(function(e)

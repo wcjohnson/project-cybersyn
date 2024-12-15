@@ -905,19 +905,21 @@ function tick_poll_entities(map_data, mod_settings)
 			tick_data.last_refueler = nil
 		end
 	else
-		if tick_data.last_comb == nil or map_data.to_comb[tick_data.last_comb] then
-			local comb_id, comb = next(map_data.to_comb, tick_data.last_comb)
-			tick_data.last_comb = comb_id
-			if comb then
-				if comb.valid then
-					combinator_update(map_data, comb, true)
-				else
-					map_data.to_comb[comb_id] = nil
-				end
-			end
-		else
-			tick_data.last_comb = nil
-		end
+		-- LORD: Legacy code, should be completely unneeded with new event driven combinator system. Verify.
+
+		-- if tick_data.last_comb == nil or map_data.to_comb[tick_data.last_comb] then
+		-- 	local comb_id, comb = next(map_data.to_comb, tick_data.last_comb)
+		-- 	tick_data.last_comb = comb_id
+		-- 	if comb then
+		-- 		if comb.valid then
+		-- 			combinator_update(map_data, comb, true)
+		-- 		else
+		-- 			map_data.to_comb[comb_id] = nil
+		-- 		end
+		-- 	end
+		-- else
+		-- 	tick_data.last_comb = nil
+		-- end
 	end
 end
 ---@param map_data MapData

@@ -1,11 +1,9 @@
 --By Mami
 ---@class MapData
 ---@field public total_ticks uint
----@field public layout_top_id uint
----@field public to_comb {[uint]: LuaEntity}
----@field public to_comb_params {[uint]: ArithmeticCombinatorParameters}
----@field public to_output {[uint]: LuaEntity}
----@field public to_stop {[uint]: LuaEntity}
+---@field public combinators {[UnitNumber]: Cybersyn.Combinator} All the recognized Cybersyn combinators in the game world, indexed by their unit number.
+---@field public combinator_uis {[PlayerIndex]: Cybersyn.Combinator.PlayerUiState} The per-player state of open Cybersyn combinator UIs.
+---@field public train_stops {[UnitNumber]: Cybersyn.TrainStop} All the recognized Cybersyn train stops in the game world, indexed by their unit number.
 ---@field public stations {[uint]: Station}
 ---@field public active_station_ids uint[]
 ---@field public warmup_station_ids uint[]
@@ -16,6 +14,7 @@
 ---@field public trains {[uint]: Train}
 ---@field public available_trains {[string]: {[uint]: true?}} --{[network_name]: {[train_id]: true}}
 ---@field public to_refuelers {[string]: {[uint]: true?}} --{[network_name]: {[refeuler_id]: true}}
+---@field public layout_top_id uint
 ---@field public layouts {[uint]: (0|1|2)[]}
 ---@field public layout_train_count {[uint]: int}
 ---@field public tick_state uint
@@ -25,6 +24,7 @@
 ---@field public active_alerts {[uint]: {[1]: LuaTrain, [2]: int}}?
 ---@field public manager Manager
 ---@field public perf_cache PerfCache -- This gets reset to an empty table on migration change
+---@field public debug_overlay any Persistent data used by the debug overlay renderer. For internal use only.
 
 ---@class PerfCache
 ---@field public se_get_space_elevator_name {}?
@@ -139,6 +139,7 @@
 ---@field public enable_manager boolean
 ---@field public manager_ups double
 ---@field public manager_enabled boolean
+---@field public enable_debug_overlay boolean
 
 --if this is uncommented it means there are migrations to write
 
@@ -157,10 +158,9 @@ function init_global()
 		all_p_stations = {},
 		all_names = {},
 	}
-	storage.to_comb = {}
-	storage.to_comb_params = {}
-	storage.to_output = {}
-	storage.to_stop = {}
+	storage.combinators = {}
+	storage.combinator_uis = {}
+	storage.train_stops = {}
 	storage.stations = {}
 	storage.active_station_ids = {}
 	storage.warmup_station_ids = {}

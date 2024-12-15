@@ -344,8 +344,10 @@ function register_gui_actions()
 		["comb_setting_flip"] = handle_setting_flip,
 	})
 	flib_gui.handle_events()
-	script.on_event(defines.events.on_gui_opened, on_gui_opened)
-	script.on_event(defines.events.on_gui_closed, on_gui_closed)
+	-- LORD: temporarily disabled
+
+	--script.on_event(defines.events.on_gui_opened, on_gui_opened)
+	--script.on_event(defines.events.on_gui_closed, on_gui_closed)
 end
 
 ---@param comb LuaEntity
@@ -429,7 +431,7 @@ function gui_opened(comb, player)
 										},
 										{
 											type = "label",
-											caption = { is_ghost and STATUS_NAMES_GHOST or STATUS_NAMES[comb.status] or STATUS_NAMES_DEFAULT }
+											caption = { is_ghost and STATUS_NAMES_GHOST or STATUS_NAMES[comb.status] or STATUS_NAMES_DEFAULT },
 										},
 									},
 								},
@@ -452,7 +454,7 @@ function gui_opened(comb, player)
 									type = "label",
 									style = "heading_2_label",
 									caption = { "cybersyn-gui.operation" },
-									style_mods = { top_padding = 8 }
+									style_mods = { top_padding = 8 },
 								},
 								{
 									type = "flow",
@@ -650,7 +652,7 @@ function gui_opened(comb, player)
 											name = "allow_list_items",
 											direction = "horizontal",
 											tooltip = layoutTooltip,
-											children = layoutItems
+											children = layoutItems,
 										},
 										{
 											type = "button",

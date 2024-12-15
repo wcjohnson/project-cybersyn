@@ -161,13 +161,6 @@ end
 function interface.get_id_from_stop(stop)
 	return stop.unit_number
 end
----@param comb LuaEntity
-function interface.get_id_from_comb(comb)
-	local stop = storage.to_stop[comb.unit_number]
-	if stop then
-		return stop.unit_number
-	end
-end
 
 ------------------------------------------------------------------
 --[[safe API]]
@@ -180,11 +173,6 @@ function interface.write_setting(key, value)
 	--be careful that the value you write is of the correct type specified in storage.lua
 	--these settings are not saved and have to be set on load and on init
 	mod_settings[key] = value
-end
-
----@param comb LuaEntity
-function interface.combinator_update(comb)
-	combinator_update(storage, comb)
 end
 
 ---@param train_id uint
@@ -364,17 +352,6 @@ remote.add_interface("cybersyn", interface)
 ------------------------------------------------------------------
 --[[internal event calls]]
 ------------------------------------------------------------------
-
----@param entity LuaEntity
----@param old_parameters ArithmeticCombinatorParameters
-function interface_raise_combinator_changed(entity, old_parameters)
-	if on_combinator_changed then
-		raise_event(on_combinator_changed, {
-			entity = entity,
-			old_parameters = old_parameters,
-		})
-	end
-end
 
 ---@param station_id uint
 function interface_raise_station_created(station_id)
