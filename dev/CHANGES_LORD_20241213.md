@@ -59,4 +59,5 @@ Cybersyn now has an internal event backplane, implemented in `events.lua`. The c
   - When new rails are built, it's checked if the rail would affect the layout of a stop; if so, the stop's layout is recomputed.
   - When the layout of a stop is recomputed, all combinators within the bounding box, as well as all previously associated combinators, are re-associated.
   - When a stop is destroyed, all formerly associated combinators are re-associated.
+  - When a combinator is rotated, it is re-associated.
 

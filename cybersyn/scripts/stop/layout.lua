@@ -546,6 +546,12 @@ function stop_api.compute_layout(stop_state, ignored_entity_set)
 	-- end
 end
 
+-- When a stop is built, perform an initial layout scan.
+on_train_stop_post_created(function(stop)
+	stop_api.compute_layout(stop)
+end)
+
+-- Combinators need to reassociate when rotated.
 on_combinator_rotated(function(entity)
 	local combinator = combinator_api.get_combinator_state(entity.unit_number)
 	if combinator then
@@ -553,6 +559,9 @@ on_combinator_rotated(function(entity)
 	end
 end)
 
+-- When rails are built, we need to re-evaluate layouts of affected stops.
+-- We must be efficient and rely heavily on the rail cache, as building rails
+-- is common/spammy.
 on_rail_built(function(rail)
 	-- If this is the connected-rail of a stop, we must update that stop's
 	-- layout first to populate the rail cache.
@@ -622,7 +631,11 @@ on_rail_built(function(rail)
 	end
 end)
 
+-- When a rail is being destroyed, we need to re-evaluate layouts of affected stops.
 on_rail_broken(function(rail)
+	-- TODO: it is possible that breaking a rail would remove a split in the tracks,
+	-- causing a stop that was not associated with that rail to be enlarged. That case requires a much more complex
+	-- algorithm and isn't handled right now.
 	local stop = find_stop_from_rail(rail)
 	if stop then
 		stop_api.compute_layout(stop, { [rail.unit_number] = true })

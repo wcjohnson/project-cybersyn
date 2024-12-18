@@ -167,6 +167,7 @@ function create_recursive(stop_entities, depth)
 			-- Elide duplicate stop creation.
 			goto continue
 		end
+		-- Create the new stop state.
 		stop = stop_api.create_stop_state(stop_entity)
 		stop.is_being_created = true
 		raise_train_stop_created(stop)
@@ -190,8 +191,3 @@ end
 function stop_api.reassociate_combinators(combinators)
 	return reassociate_recursive(combinators, 1)
 end
-
-on_train_stop_post_created(function(stop)
-	-- Perform initial scan of stop layout
-	stop_api.compute_layout(stop)
-end)
