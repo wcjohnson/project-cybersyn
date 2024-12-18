@@ -1,6 +1,8 @@
 -- Base types and library code for manipulating Cybersyn combinators.
 
 local flib_position = require("__flib__.position")
+local distance_squared = flib_position.distance_squared
+local INF = math.huge
 
 if not combinator_api then combinator_api = {} end
 
@@ -101,17 +103,15 @@ function combinator_api.find_combinator_entity_ghosts(surface, area, position, r
 end
 
 ---Given a combinator, find the nearby `LuaEntity` that will determine its
----association. If a train stop is in range, it is preferred. Otherwise, if
----it is pointing at a straight rail, that is preferred.
+---association.
 ---@param comb LuaEntity A *valid* combinator entity.
----@return LuaEntity? stop_entity A possibly associable train stop.
----@return LuaEntity? rail_entity A straight rail to which the combinator is pointing.
+---@return LuaEntity? stop_entity The closest-to-front train stop within the combinator's association zone.
+---@return LuaEntity? rail_entity The closest-to-front straight rail with a train stop within the combinator's association zone.
 function combinator_api.find_associable_entity(comb)
-	-- LORD: We need to account for the direction the combinator is facing
-	-- when scanning for rails. This is because if parallel tracks are separated
-	-- by two tiles, it's ambiguous whether a wagon control should attach to
-	-- the left or right track. We can resolve this by checking the direction
 	local pos_x, pos_y = pos_get(comb.position)
+	-- We need to account for the direction the combinator is facing. If
+	-- the combinator would associate ambiguously with multiple stops or rails,
+	-- we prefer the one that is closer to the front of the combinator.
 	local front = pos_move(comb.position, comb.direction, 1)
 	local search_area
 	if comb.direction == defines.direction.north or comb.direction == defines.direction.south then
@@ -127,17 +127,25 @@ function combinator_api.find_associable_entity(comb)
 	end
 	local stop = nil
 	local rail = nil
-	local rail_dist = math.huge
+	local stop_dist = INF
+	local rail_dist = INF
 	local entities = comb.surface.find_entities_filtered({ area = search_area, name = { "train-stop", "straight-rail" } })
 	for _, cur_entity in pairs(entities) do
 		if cur_entity.name == "train-stop" then
-			--NOTE: if there are multiple stops we take the later one
-			stop = cur_entity
+			local dist = distance_squared(front, cur_entity.position)
+			if dist < stop_dist then
+				stop_dist = dist
+				stop = cur_entity
+			end
 		elseif cur_entity.type == "straight-rail" then
-			local dist = flib_position.distance_squared(front, cur_entity.position)
-			if dist < rail_dist then
-				rail_dist = dist
-				rail = cur_entity
+			-- Prefer rails with stops, then prefer rails nearer the
+			-- front of the combinator.
+			if stop_api.find_stop_from_rail(cur_entity) then
+				local dist = distance_squared(front, cur_entity.position)
+				if dist < rail_dist then
+					rail_dist = dist
+					rail = cur_entity
+				end
 			end
 		end
 	end

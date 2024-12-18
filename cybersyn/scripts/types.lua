@@ -39,6 +39,9 @@
 ---@class Cybersyn.TrainStop.Layout Information about the equipment that makes up the train stop.
 ---@field public legacy_layout_pattern (0|1|2|3)[]? Legacy equipment pattern.
 ---@field public accepted_layouts {[uint]: true?} Accepted train layout map.
+---@field public bbox BoundingBox? The bounding box used when scanning for equipment.
+---@field public rail_set UnitNumberSet The set of rails used when scanning for equipment.
+---@field public direction defines.direction? The direction from the train stop towards the equipment, if known.
 
 ---@class Cybersyn.TrainStop.LayoutScanState Transient state of a layout scan while in progress.
 ---@field public bbox BoundingBox The bounding box of the layout scan.

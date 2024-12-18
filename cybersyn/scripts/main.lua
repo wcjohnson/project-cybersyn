@@ -640,7 +640,13 @@ end
 ---@param map_data MapData
 ---@param stop_entity LuaEntity
 local function on_stop_built(map_data, stop_entity)
-	stop_api.create_stop_if_nearby_combinator(stop_entity)
+	local combs = stop_api.find_associable_combinators(stop_entity)
+	if #combs > 0 then
+		local comb_states = map(combs, function(comb)
+			return combinator_api.get_combinator_state(comb.unit_number)
+		end)
+		stop_api.reassociate_combinators(comb_states)
+	end
 end
 
 ---@param map_data MapData
@@ -734,8 +740,8 @@ local function on_built(event)
 		update_stop_from_loader(storage, entity)
 	elseif entity.type == "pump" then
 		update_stop_from_pump(storage, entity)
-	elseif entity.type == "straight-rail" or entity.type == "curved-rail" then
-		update_stop_from_rail(storage, entity)
+	elseif entity.type == "straight-rail" or entity.type == "curved-rail-a" or entity.type == "curved-rail-b" then
+		raise_rail_built(entity)
 	end
 end
 
@@ -756,8 +762,8 @@ local function on_broken(event)
 		update_stop_from_loader(storage, entity, entity)
 	elseif entity.type == "pump" then
 		update_stop_from_pump(storage, entity, entity)
-	elseif entity.type == "straight-rail" or entity.type == "curved-rail" then
-		update_stop_from_rail(storage, entity, nil)
+	elseif entity.type == "straight-rail" or entity.type == "curved-rail-a" or entity.type == "curved-rail-b" then
+		raise_rail_broken(entity)
 		-- TODO: consider elevated rails
 	elseif entity.train then
 		local train_id = entity.train.id
@@ -776,8 +782,9 @@ local function on_rotate(event)
 		update_stop_from_inserter(storage, entity)
 	end
 
-	-- LORD: handle rotating combinators; wagon combinators should bind to the
-	-- track they point towards if ambiguous.
+	if COMBINATOR_ENTITY_NAMES_SET[entity.name] then
+		raise_combinator_rotated(entity)
+	end
 end
 
 local function on_surface_removed(event)
@@ -866,10 +873,11 @@ end
 
 local filter_built = {
 	{ filter = "name", name = "train-stop" },
+	{ filter = "type", type = "straight-rail" },
+	{ filter = "type", type = "curved-rail-a" },
+	{ filter = "type", type = "curved-rail-b" },
 	{ filter = "type", type = "inserter" },
 	{ filter = "type", type = "pump" },
-	{ filter = "type", type = "straight-rail" },
-	{ filter = "type", type = "curved-rail" },
 	{ filter = "type", type = "loader-1x1" },
 }
 for _, name in ipairs(COMBINATOR_ENTITY_NAMES_ARRAY) do
@@ -879,10 +887,11 @@ end
 
 local filter_broken = {
 	{ filter = "name", name = "train-stop" },
+	{ filter = "type", type = "straight-rail" },
+	{ filter = "type", type = "curved-rail-a" },
+	{ filter = "type", type = "curved-rail-b" },
 	{ filter = "type", type = "inserter" },
 	{ filter = "type", type = "pump" },
-	{ filter = "type", type = "straight-rail" },
-	{ filter = "type", type = "curved-rail" },
 	{ filter = "type", type = "loader-1x1" },
 	{ filter = "rolling-stock" },
 }

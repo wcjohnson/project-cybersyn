@@ -171,12 +171,27 @@ on_combinator_ghost_revived, raise_combinator_ghost_revived, meta_combinator_gho
 	"combinator_ghost_revived",
 	"UnitNumber", "LuaEntity", "nil", "nil", "nil")
 
+-- Event raised when a Cybersyn combinator entity is rotated in the world.
+on_combinator_rotated, raise_combinator_rotated, meta_combinator_rotated = event(
+	"combinator_rotated",
+	"LuaEntity", "nil", "nil", "nil", "nil")
+
+-- Event raised when a rail is built that might affect stop layouts.
+-- NOTE: Due to blueprints often containing large numbers of rails, this is
+-- raised in a spammy fashion. Consumers should be careful to avoid performance issues.
+on_rail_built, raise_rail_built, meta_rail_built = event(
+	"rail_built",
+	"LuaEntity", "nil", "nil", "nil", "nil")
+
+-- Event raised when a rail is destroyed that might affect stop layouts.
+on_rail_broken, raise_rail_broken, meta_rail_broken = event(
+	"rail_broken",
+	"LuaEntity", "nil", "nil", "nil", "nil")
+
 -- Event raised before a train stop's layout is scanned for equipment.
--- - Arg 1 - `Cybersyn.TrainStop` - the train stop whose layout is about to be scanned
--- - Arg 2 - `BoundingBox` - the area that will be scanned for equipment
 on_train_stop_layout_pre_scan, raise_train_stop_layout_pre_scan, meta_train_stop_layout_pre_scan = event(
 	"train_stop_layout_pre_scan",
-	"Cybersyn.TrainStop.LayoutScanState", "nil", "nil", "nil", "nil")
+	"Cybersyn.TrainStop", "nil", "nil", "nil", "nil")
 
 -- Echoes the game's `on_init` event.
 on_game_on_init, raise_game_on_init, meta_game_on_init = event(

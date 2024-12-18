@@ -4,6 +4,7 @@
 ---@field public combinators {[UnitNumber]: Cybersyn.Combinator} All the recognized Cybersyn combinators in the game world, indexed by their unit number.
 ---@field public combinator_uis {[PlayerIndex]: Cybersyn.Combinator.PlayerUiState} The per-player state of open Cybersyn combinator UIs.
 ---@field public train_stops {[UnitNumber]: Cybersyn.TrainStop} All the recognized Cybersyn train stops in the game world, indexed by their unit number.
+---@field public rail_to_stop {[UnitNumber]: UnitNumber} A mapping of rail entities to their automatically-associated train stops, indexed by the rail's unit number.
 ---@field public stations {[uint]: Station}
 ---@field public active_station_ids uint[]
 ---@field public warmup_station_ids uint[]
@@ -141,11 +142,11 @@
 ---@field public manager_enabled boolean
 ---@field public enable_debug_overlay boolean
 
---if this is uncommented it means there are migrations to write
-
 ---@alias cybersyn.global MapData
+
 ---@type CybersynModSettings
-mod_settings = {}
+---@diagnostic disable-next-line: missing-fields
+mod_settings = {} -- initialized later in main.lua
 ---@type boolean
 IS_SE_PRESENT = nil
 
@@ -161,6 +162,7 @@ function init_global()
 	storage.combinators = {}
 	storage.combinator_uis = {}
 	storage.train_stops = {}
+	storage.rail_to_stop = {}
 	storage.stations = {}
 	storage.active_station_ids = {}
 	storage.warmup_station_ids = {}

@@ -169,6 +169,23 @@ function map_table(T, f)
 	return A
 end
 
+---Generate a new table by applying a transformation to all the pairs of
+---an existing table.
+---@generic K1, V1, K2, V2
+---@param T table<K1, V1>
+---@param f fun(k: K1, v: V1): K2, V2
+---@return table<K2, V2>
+function transform_table(T, f)
+	local U = {}
+	for k, v in pairs(T) do
+		local k2, v2 = f(k, v)
+		if k2 ~= nil then
+			U[k2] = v2
+		end
+	end
+	return U
+end
+
 ---@param quality_id QualityID?
 ---@return string? quality_name The name of the quality, or `nil` if the quality is `nil`.
 function quality_id_to_name(quality_id)

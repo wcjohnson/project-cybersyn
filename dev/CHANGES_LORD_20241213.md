@@ -46,3 +46,17 @@ Cybersyn now has an internal event backplane, implemented in `events.lua`. The c
 - Stop layout computation algorithm has been rewritten. It now accounts for 2.0 rails, and is able to measure in units of tiles in addition to hard-coded 6-length wagons. (This should make it possible to provide better support for modded wagons of odd lengths in the future.)
 - Stop layout computation locates and associates distant combinators (things like wagon control that are far from the associated stop)
 - Stop layout is event driven and extensible.
+
+### Layout engine rewrite
+- Rules of Combinator Association:
+  - S is the set of all train stops in the yellow radius of the combinator. R is the set of all straight rails in the yellow radius of the combinator.
+  - If S is nonempty, the stop in S that is closest to the front of the combinator (output side) is the associated stop.
+  - If S is empty but R is nonempty, the rails in R are checked, beginning from the rail closest to the front of the combinator (output side) and moving towards more distant rails. The first such rail that is in the railset of a stop, that stop is the associated stop.
+  - If no stop can be found according to these rules, the combinator is orphaned.
+- Events That Trigger These Rules:
+  - If a new combinator is built, it is re-associated.
+  - If a new stop is built, all combinators for which the new stop would be inside the yellow radius are re-associated.
+  - When new rails are built, it's checked if the rail would affect the layout of a stop; if so, the stop's layout is recomputed.
+  - When the layout of a stop is recomputed, all combinators within the bounding box, as well as all previously associated combinators, are re-associated.
+  - When a stop is destroyed, all formerly associated combinators are re-associated.
+

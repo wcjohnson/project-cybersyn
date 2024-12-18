@@ -68,25 +68,7 @@ function combinator_api.create_combinator(comb_entity)
 	end
 	comb = combinator_api.create_combinator_state(comb_entity)
 	raise_combinator_created(comb)
-
-	-- Attempt to associate the combinator
-	local stop_entity, rail_entity = combinator_api.find_associable_entity(comb_entity)
-	if stop_entity then
-		local stop = stop_api.get_stop_state(stop_entity.unit_number, true)
-		if stop then
-			if stop_api.is_valid(stop) and (not stop.is_being_destroyed) then
-				stop_api.associate_combinator(stop, comb)
-			end
-		else
-			-- There is a stop but it isn't a Cybersyn stop yet. Delegate to the
-			-- stop lifecycle module to create the stop and associate the combinator.
-			stop_api.create_stop_if_nearby_combinator(stop_entity)
-		end
-	elseif rail_entity then
-		-- This could be a distant combinator, e.g. wagon control.
-		-- Delegate to stop layout system.
-		stop_api.update_layout_from_rail(rail_entity)
-	end
+	stop_api.reassociate_combinators({ comb })
 end
 
 on_combinator_created(function(combinator)
