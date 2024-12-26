@@ -45,11 +45,11 @@ local function event(name, p1, p2, p3, p4, p5)
 			game.print(
 				"DEBUG: Event raised: " ..
 				name .. " " .. arg1,
-				{ skip = defines.print_skip.never }
+				{ skip = defines.print_skip.never, sound = defines.print_sound.never }
 			)
 		end
-		for _, f in ipairs(bindings) do
-			f(...)
+		for i = 1, #bindings do
+			bindings[i](...)
 		end
 	end
 	local function meta(op, f)
@@ -192,6 +192,19 @@ on_rail_broken, raise_rail_broken, meta_rail_broken = event(
 on_train_stop_layout_pre_scan, raise_train_stop_layout_pre_scan, meta_train_stop_layout_pre_scan = event(
 	"train_stop_layout_pre_scan",
 	"Cybersyn.TrainStop", "nil", "nil", "nil", "nil")
+
+-- Event raised after a train stop's layout is scanned for equipment.
+on_train_stop_layout_post_scan, raise_train_stop_layout_post_scan, meta_train_stop_layout_post_scan = event(
+	"train_stop_layout_post_scan",
+	"Cybersyn.TrainStop", "nil", "nil", "nil", "nil")
+
+-- Event raised when a piece of equipment is found that may affect the layout
+-- of a train stop. Consumers should use `stop_api` callbacks to register their
+-- equipment if it can load/unload from the given stop. May be called multiple
+-- times for the same piece of equipment, even if the piece of equipment has
+-- not moved or changed state.
+on_train_stop_equipment_found, raise_train_stop_equipment_found, meta_train_stop_equipment_found = event(
+	"train_stop_equipment_found", "Cybersyn.TrainStop", "LuaEntity", "nil", "nil", "nil")
 
 -- Echoes the game's `on_init` event.
 on_game_on_init, raise_game_on_init, meta_game_on_init = event(

@@ -177,7 +177,9 @@ function create_recursive(stop_entities, depth)
 			local comb_states = map(combs, function(comb)
 				return combinator_api.get_combinator_state(comb.unit_number)
 			end)
-			reassociate_recursive(comb_states, depth + 1)
+			if #comb_states > 0 then
+				reassociate_recursive(comb_states, depth + 1)
+			end
 		end
 		stop.is_being_created = nil
 		raise_train_stop_post_created(stop)

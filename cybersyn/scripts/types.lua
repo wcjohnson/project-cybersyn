@@ -1,5 +1,3 @@
--- By @wcjohnson
---
 -- Definitions of globally-utilized types and enumerations exposed at the
 -- root level. Types used in events and global state should be defined here.
 -- Types specific to particular APIs should be defined alongside those APIs.
@@ -40,12 +38,6 @@
 ---@field public legacy_layout_pattern (0|1|2|3)[]? Legacy equipment pattern.
 ---@field public accepted_layouts {[uint]: true?} Accepted train layout map.
 ---@field public bbox BoundingBox? The bounding box used when scanning for equipment.
----@field public rail_set UnitNumberSet The set of rails used when scanning for equipment.
+---@field public rail_bbox BoundingBox? The bounding box for only the rails.
+---@field public rail_set UnitNumberSet The set of rails associated to this stop.
 ---@field public direction defines.direction? The direction from the train stop towards the equipment, if known.
-
----@class Cybersyn.TrainStop.LayoutScanState Transient state of a layout scan while in progress.
----@field public bbox BoundingBox The bounding box of the layout scan.
----@field public stop Cybersyn.TrainStop The train stop being scanned.
----@field public direction defines.direction The map direction along which distance is measured within the bounding box.
----@field public equipment_prototype_types string[] Prototype type-names that should be considered as equipment when scanning.
----@field public equipment_prototype_names string[] Prototype names that should be considered equipment when scanning.

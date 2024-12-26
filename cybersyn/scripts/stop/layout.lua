@@ -31,11 +31,13 @@ local connected_rail_rev = {
 -- Maximum number of rail entities to search in iterative rail searches.
 local MAX_RAILS_TO_SEARCH = 112 -- TODO: why 112?
 
--- List of prototypes that are considered equipment when scanning stops.
-local equipment_type_list = { "inserter", "pump", "arithmetic-combinator", "loader-1x1", "loader" }
+-- List of prototype types that are considered equipment when scanning stops.
+local equipment_type_list = { "inserter", "pump", "loader-1x1", "loader" }
+-- List of prototype names that are considered equipment when scanning stops.
+local equipment_name_list = {}
 
 ---@class Cybersyn.Internal.IterativeRailSearchState
----@field public next_connected_rail any One of `connected_rail_fwd` or `connected_rail_rev`.
+---@field public next_connected_rail any The argument to `get_connected_rail` used to iterate along the rails.
 ---@field public direction defines.direction? Absolute direction of the search in world space; established after 1 iteration.
 ---@field public rail LuaEntity? The current rail being examined
 ---@field public segment_rail LuaEntity? The rail defining the current segment being searched.
@@ -58,7 +60,7 @@ local function draw_rail_search_debug_overlay(rail)
 	})
 end
 
----Perform one step of an iterative rail search.
+---Perform one step of a unidirectional iterative rail search.
 ---@param state Cybersyn.Internal.IterativeRailSearchState Iteration state. This is mutated by the ongoing iterative search.
 ---@return boolean continue Should the iteration continue?
 ---@return any result? The result of the search as defined by the check function.
@@ -94,59 +96,6 @@ local function rail_search_iteration(state)
 	end
 	state.rail = next_rail
 	return true, nil
-end
-
----Check function to find nearest associated train stop in an iterative rail search.
----@param state Cybersyn.Internal.IterativeRailSearchState
-local function search_for_stop(state)
-	local current_rail = state.rail --[[@as LuaEntity]]
-	-- Non-straight rail = done
-	if current_rail.type ~= "straight-rail" then return false, nil end
-	-- If rail reaches a stop, we're done. If the stop is in a good direction
-	-- the search is successful, otherwise don't go further.
-	if current_rail == state.front_rail then
-		if (not state.direction) or state.direction == state.front_stop.direction then
-			return false, state.front_stop
-		else
-			return false, nil
-		end
-	elseif current_rail == state.back_rail then
-		if (not state.direction) or state.direction == state.back_stop.direction then
-			return false, state.back_stop
-		else
-			return false, nil
-		end
-	end
-	return true
-end
-
----Find the stop associated to the given rail entity. Attempts to move in both directions, looking for the
----first stop it finds, stopping under the same conditions as the layout scanner.
----@param rail_entity LuaEntity A *valid* rail.
----@return LuaEntity? stop_entity The stop entity, if found.
-function stop_api.find_stop_from_rail_by_iterative_search(rail_entity)
-	---@type Cybersyn.Internal.IterativeRailSearchState?
-	local fwd_search = { rail = rail_entity, next_connected_rail = connected_rail_fwd, check = search_for_stop }
-	---@type Cybersyn.Internal.IterativeRailSearchState?
-	local rev_search = { rail = rail_entity, next_connected_rail = connected_rail_rev, check = search_for_stop }
-	local rail_number = 1
-	local cont = false
-	while rail_number < MAX_RAILS_TO_SEARCH do
-		if fwd_search then
-			cont, stop = rail_search_iteration(fwd_search)
-			if stop then return stop end
-			if not cont then fwd_search = nil end
-		end
-
-		if rev_search then
-			cont, stop = rail_search_iteration(rev_search)
-			if stop then return stop end
-			if not cont then rev_search = nil end
-		end
-
-		if not fwd_search and not rev_search then break end
-		rail_number = rail_number + 1
-	end
 end
 
 ---Find the stop associated to the given rail using the rail cache.
@@ -309,6 +258,7 @@ function stop_api.compute_layout(stop_state, ignored_entity_set)
 	end
 
 	-- Update the rail set caches.
+	stop_state.layout.rail_bbox = flib_bbox.ceil(bbox)
 	clear_rail_set_from_storage(stop_state.layout.rail_set)
 	stop_state.layout.rail_set = rail_set
 	add_rail_set_to_storage(rail_set, stop_id)
@@ -352,7 +302,24 @@ function stop_api.compute_layout(stop_state, ignored_entity_set)
 	if stop_state.is_being_destroyed or (not stop_api.is_valid(stop_state)) then return end
 
 	-- Now, scan for loading equipment.
+	stop_state.layout.legacy_layout_pattern = { 0 }
 	raise_train_stop_layout_pre_scan(stop_state)
+
+	local equipment_by_type = stop_entity.surface.find_entities_filtered({ type = equipment_type_list })
+	for _, equipment in pairs(equipment_by_type) do
+		if (not ignored_entity_set) or (not ignored_entity_set[equipment.unit_number]) then
+			raise_train_stop_equipment_found(stop_state, equipment)
+		end
+	end
+
+	local equipment_by_name = stop_entity.surface.find_entities_filtered({ name = equipment_name_list })
+	for _, equipment in pairs(equipment_by_name) do
+		if (not ignored_entity_set) or (not ignored_entity_set[equipment.unit_number]) then
+			raise_train_stop_equipment_found(stop_state, equipment)
+		end
+	end
+
+	raise_train_stop_layout_post_scan(stop_state)
 
 	-- local search_area
 	-- local area_delta
@@ -634,7 +601,7 @@ end)
 -- When a rail is being destroyed, we need to re-evaluate layouts of affected stops.
 on_rail_broken(function(rail)
 	-- TODO: it is possible that breaking a rail would remove a split in the tracks,
-	-- causing a stop that was not associated with that rail to be enlarged. That case requires a much more complex
+	-- causing a stop that was not associated with that rail to be enlarged. That case requires a more complex
 	-- algorithm and isn't handled right now.
 	local stop = find_stop_from_rail(rail)
 	if stop then
