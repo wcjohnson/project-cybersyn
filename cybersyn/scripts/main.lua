@@ -882,7 +882,7 @@ local filter_built = {
 }
 for _, name in ipairs(COMBINATOR_ENTITY_NAMES_ARRAY) do
 	table.insert(filter_built, { filter = "name", name = name })
-	table.insert(filter_built, { filter = "ghost", ghost_name = name })
+	table.insert(filter_built, { filter = "ghost_name", name = name })
 end
 
 local filter_broken = {
@@ -897,7 +897,7 @@ local filter_broken = {
 }
 for _, name in ipairs(COMBINATOR_ENTITY_NAMES_ARRAY) do
 	table.insert(filter_broken, { filter = "name", name = name })
-	table.insert(filter_broken, { filter = "ghost", ghost_name = name })
+	table.insert(filter_broken, { filter = "ghost_name", name = name })
 end
 
 local function main()
