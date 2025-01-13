@@ -171,23 +171,6 @@ on_combinator_ghost_revived, raise_combinator_ghost_revived, meta_combinator_gho
 	"combinator_ghost_revived",
 	"UnitNumber", "LuaEntity", "nil", "nil", "nil")
 
--- Event raised when a Cybersyn combinator entity is rotated in the world.
-on_combinator_rotated, raise_combinator_rotated, meta_combinator_rotated = event(
-	"combinator_rotated",
-	"LuaEntity", "nil", "nil", "nil", "nil")
-
--- Event raised when a rail is built that might affect stop layouts.
--- NOTE: Due to blueprints often containing large numbers of rails, this is
--- raised in a spammy fashion. Consumers should be careful to avoid performance issues.
-on_rail_built, raise_rail_built, meta_rail_built = event(
-	"rail_built",
-	"LuaEntity", "nil", "nil", "nil", "nil")
-
--- Event raised when a rail is destroyed that might affect stop layouts.
-on_rail_broken, raise_rail_broken, meta_rail_broken = event(
-	"rail_broken",
-	"LuaEntity", "nil", "nil", "nil", "nil")
-
 -- Event raised before a train stop's layout is scanned for equipment.
 on_train_stop_layout_pre_scan, raise_train_stop_layout_pre_scan, meta_train_stop_layout_pre_scan = event(
 	"train_stop_layout_pre_scan",
@@ -203,8 +186,39 @@ on_train_stop_layout_post_scan, raise_train_stop_layout_post_scan, meta_train_st
 -- equipment if it can load/unload from the given stop. May be called multiple
 -- times for the same piece of equipment, even if the piece of equipment has
 -- not moved or changed state.
+-- - Arg 1 - `LuaEntity` - the equipment that was found
+-- - Arg 2 - `Cybersyn.TrainStop` - the stop the equipment may impact
+-- - Arg 3 - `boolean` - `true` if the equipment is being deconstructed
 on_train_stop_equipment_found, raise_train_stop_equipment_found, meta_train_stop_equipment_found = event(
-	"train_stop_equipment_found", "Cybersyn.TrainStop", "LuaEntity", "nil", "nil", "nil")
+	"train_stop_equipment_found", "LuaEntity", "Cybersyn.TrainStop", "boolean", "nil", "nil")
+
+-- Event raised when a piece of equipment is built. Consumers must determine if the equipment is associated
+-- with a stop using `stop_api.find_stop_from_rail`. If so, they should fire
+-- `train_stop_equipment_found` for the equipment.
+-- - Arg 1 - `LuaEntity` - the equipment that was built
+-- - Arg 2 - `boolean` - `true` if the equipment is being deconstructed
+on_equipment_built, raise_equipment_built, meta_equipment_built = event(
+	"equipment_built",
+	"LuaEntity", "boolean", "nil", "nil", "nil")
+
+-- Event raised at beginning of dispatch loop when a train stop's state is being
+-- re-evaluated. Should be used to update the stop's internal metadata using
+-- information from the settings and combinators.
+on_train_stop_state_check, raise_train_stop_state_check, meta_train_stop_state_check = event(
+	"train_stop_state_check",
+	"Cybersyn.TrainStop", "int", "nil", "nil", "nil")
+
+-- Event raised when a train stop's loading equipment pattern changes.
+on_train_stop_loading_equipment_pattern_changed, raise_train_stop_loading_equipment_pattern_changed, meta_train_stop_loading_equipment_pattern_changed =
+		event(
+			"train_stop_loading_equipment_pattern_changed",
+			"Cybersyn.TrainStop", "nil", "nil", "nil", "nil")
+
+-- Event raised when a train stop's accepted layouts/automatic allow list changes.
+on_train_stop_accepted_layouts_changed, raise_train_stop_accepted_layouts_changed, meta_train_stop_accepted_layouts_changed =
+		event(
+			"train_stop_accepted_layouts_changed",
+			"Cybersyn.TrainStop", "nil", "nil", "nil", "nil")
 
 -- Echoes the game's `on_init` event.
 on_game_on_init, raise_game_on_init, meta_game_on_init = event(

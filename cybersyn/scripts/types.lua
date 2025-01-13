@@ -35,8 +35,10 @@
 ---@field public layout Cybersyn.TrainStop.Layout Information about the equipment that makes up the train stop.
 
 ---@class Cybersyn.TrainStop.Layout Information about the equipment that makes up the train stop.
----@field public legacy_layout_pattern (0|1|2|3)[]? Legacy equipment pattern.
----@field public accepted_layouts {[uint]: true?} Accepted train layout map.
+---@field public cargo_loader_map {[UnitNumber]: uint} Map of equipment that can load cargo to tile indices relative to the train stop.
+---@field public fluid_loader_map {[UnitNumber]: uint} Map of equipment that can load fluid to tile indices relative to the train stop.
+---@field public loading_equipment_pattern (0|1|2|3)[] Auto-allowlist car pattern, inferred from equipment. 0 = no equipment, 1 = cargo, 2 = fluid, 3 = both.
+---@field public accepted_layouts {[uint]: true?} Set of accepted train layouts.
 ---@field public bbox BoundingBox? The bounding box used when scanning for equipment.
 ---@field public rail_bbox BoundingBox? The bounding box for only the rails.
 ---@field public rail_set UnitNumberSet The set of rails associated to this stop.

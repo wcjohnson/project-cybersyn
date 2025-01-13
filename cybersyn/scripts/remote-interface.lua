@@ -221,12 +221,6 @@ function interface.reset_stop_layout(stop_id, forbidden_entity, force_update)
 		reset_stop_layout(storage, stop, is_station, forbidden_entity)
 	end
 end
----@param rail LuaEntity
----@param forbidden_entity LuaEntity?
----@param force_update boolean?
-function interface.update_stop_from_rail(rail, forbidden_entity, force_update)
-	update_stop_from_rail(storage, rail, forbidden_entity, force_update)
-end
 
 ------------------------------------------------------------------
 --[[unsafe API]]

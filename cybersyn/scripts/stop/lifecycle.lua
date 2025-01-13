@@ -21,6 +21,9 @@ function stop_api.create_stop_state(stop_entity)
 		layout = {
 			accepted_layouts = {},
 			rail_set = {},
+			loading_equipment_pattern = { 0 },
+			cargo_loader_map = {},
+			fluid_loader_map = {},
 		},
 	} --[[@as Cybersyn.TrainStop]]
 
@@ -55,10 +58,7 @@ function stop_api.destroy_stop(stop_id)
 
 	-- Reassociate all associated combinators
 	if next(stop.combinator_set) then
-		local associated_combs = map_table(stop.combinator_set, function(_, comb_id)
-			return combinator_api.get_combinator_state(comb_id)
-		end)
-		stop_api.reassociate_combinators(associated_combs)
+		stop_api.reassociate_combinators(stop_api.get_associated_combinators(stop))
 	end
 
 	-- Remove the stop itself.
@@ -192,4 +192,27 @@ end
 ---@param combinators Cybersyn.Combinator[] A list of *valid* combinator states.
 function stop_api.reassociate_combinators(combinators)
 	return reassociate_recursive(combinators, 1)
+end
+
+-- When a stop's combinator_set changes, the stop's internal state should be updated.
+on_train_stop_combinator_set_changed(function(stop)
+	stop_api.enqueue_stop_update(stop.id, bit32.bor(StopUpdateFlags.TYPE, StopUpdateFlags.COMBINATORS))
+end)
+
+---Update a stop's internal state. This should only be called by the dispatch
+---loop; end-users should use `stop_api.enqueue_stop_update` to mark a stop for an update.
+---@param stop_id UnitNumber
+---@param flags int Bitwise flags indicating which updates are needed.
+function internal_update_stop_state(stop_id, flags)
+	local stop = stop_api.get_stop_state(stop_id, true)
+	if (not stop) or (stop.is_being_destroyed) then return end
+
+	if not stop_api.is_valid(stop) then
+		-- LORD: should we delete bad stops here?
+		return
+	end
+
+	-- LORD: check for stop type change
+
+	raise_train_stop_state_check(stop, flags)
 end

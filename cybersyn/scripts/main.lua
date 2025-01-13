@@ -420,17 +420,6 @@ local function comb_to_internal_entity(map_data, comb, unit_number)
 	return 0, 0, nil, nil
 end
 
---- Queue a station's internal state to be updated from combinator data on
---- next logistics loop.
----@param map_data MapData
----@param station_id integer
-function queue_station_for_combinator_update(map_data, station_id)
-	if not map_data.queue_station_update then
-		map_data.queue_station_update = {}
-	end
-	map_data.queue_station_update[station_id] = true
-end
-
 ---@param map_data MapData
 ---@param comb LuaEntity
 function on_combinator_broken(map_data, comb)
@@ -729,19 +718,16 @@ local function on_built(event)
 
 	if entity.name == "train-stop" then
 		on_stop_built(storage, entity)
-	elseif COMBINATOR_ENTITY_NAMES_SET[entity.name] then
-		on_combinator_built(storage, entity, event.tags)
-	elseif entity.name == "entity-ghost" and COMBINATOR_ENTITY_NAMES_SET[entity.ghost_name] then
-		on_combinator_ghost_built(storage, entity)
-	elseif entity.type == "inserter" then
-		update_stop_from_inserter(storage, entity)
-	elseif entity.type == "loader-1x1" then
-		-- NOTE: only 1x1 loaders supported here.
-		update_stop_from_loader(storage, entity)
-	elseif entity.type == "pump" then
-		update_stop_from_pump(storage, entity)
 	elseif entity.type == "straight-rail" or entity.type == "curved-rail-a" or entity.type == "curved-rail-b" then
-		raise_rail_built(entity)
+		internal_rail_built(entity)
+	elseif entity.name == "entity-ghost" and combinator_api.is_combinator_name(entity.ghost_name) then
+		on_combinator_ghost_built(storage, entity)
+	elseif combinator_api.is_combinator_name(entity.name) then
+		on_combinator_built(storage, entity, event.tags)
+	elseif stop_api.is_equipment_type(entity.type) then
+		raise_equipment_built(entity, false)
+	elseif stop_api.is_equipment_name(entity.name) then
+		raise_equipment_built(entity, false)
 	end
 end
 
@@ -751,26 +737,22 @@ local function on_broken(event)
 
 	if entity.name == "train-stop" then
 		on_stop_broken(storage, entity)
-	elseif COMBINATOR_ENTITY_NAMES_SET[entity.name] then
-		on_combinator_broken(storage, entity)
-	elseif entity.name == "entity-ghost" and COMBINATOR_ENTITY_NAMES_SET[entity.ghost_name] then
-		on_combinator_ghost_broken(storage, entity)
-	elseif entity.type == "inserter" then
-		update_stop_from_inserter(storage, entity, entity)
-	elseif entity.type == "loader-1x1" then
-		-- NOTE: only 1x1 loaders supported here.
-		update_stop_from_loader(storage, entity, entity)
-	elseif entity.type == "pump" then
-		update_stop_from_pump(storage, entity, entity)
 	elseif entity.type == "straight-rail" or entity.type == "curved-rail-a" or entity.type == "curved-rail-b" then
-		raise_rail_broken(entity)
-		-- TODO: consider elevated rails
+		internal_rail_broken(entity)
+	elseif entity.name == "entity-ghost" and combinator_api.is_combinator_name(entity.ghost_name) then
+		on_combinator_ghost_broken(storage, entity)
+	elseif combinator_api.is_combinator_name(entity.name) then
+		on_combinator_broken(storage, entity)
 	elseif entity.train then
 		local train_id = entity.train.id
 		local train = storage.trains[train_id]
 		if train then
 			on_train_broken(storage, train_id, train)
 		end
+	elseif stop_api.is_equipment_type(entity.type) then
+		raise_equipment_built(entity, true)
+	elseif stop_api.is_equipment_name(entity.name) then
+		raise_equipment_built(entity, true)
 	end
 end
 
@@ -779,11 +761,9 @@ local function on_rotate(event)
 	if not entity or not entity.valid then return end
 
 	if entity.type == "inserter" then
-		update_stop_from_inserter(storage, entity)
-	end
-
-	if COMBINATOR_ENTITY_NAMES_SET[entity.name] then
-		raise_combinator_rotated(entity)
+		internal_inserter_rotated(entity)
+	elseif combinator_api.is_combinator_name(entity.name) then
+		internal_combinator_rotated(entity)
 	end
 end
 
@@ -793,7 +773,7 @@ local function on_surface_removed(event)
 		-- LORD: port to event based
 		local train_stops = surface.find_entities_filtered({ type = "train-stop" })
 		for _, entity in pairs(train_stops) do
-			if entity.valid and entity.name == "train-stop" then
+			if entity.name == "train-stop" then
 				on_stop_broken(storage, entity)
 			end
 		end
@@ -805,7 +785,7 @@ local function on_paste(event)
 	local entity = event.destination
 	if not entity or not entity.valid then return end
 
-	if COMBINATOR_ENTITY_NAMES_SET[entity.name] then
+	if combinator_api.is_combinator_name(entity.name) then
 		raise_combinator_settings_written(combinator_api.to_ephemeral_reference(entity))
 	end
 end
@@ -870,34 +850,48 @@ local function on_settings_changed(event)
 	interface_raise_on_mod_settings_changed(event)
 end
 
+local function bind_filtered_game_events()
+	local filter_built = {
+		{ filter = "name", name = "train-stop" },
+		{ filter = "type", type = "straight-rail" },
+		{ filter = "type", type = "curved-rail-a" },
+		{ filter = "type", type = "curved-rail-b" },
+	}
+	for _, name in ipairs(combinator_api.get_combinator_names()) do
+		table.insert(filter_built, { filter = "name", name = name })
+		table.insert(filter_built, { filter = "ghost_name", name = name })
+	end
+	for _, type in ipairs(stop_api.get_equipment_types()) do
+		table.insert(filter_built, { filter = "type", type = type })
+	end
+	for _, name in ipairs(stop_api.get_equipment_names()) do
+		table.insert(filter_built, { filter = "name", name = name })
+	end
 
-local filter_built = {
-	{ filter = "name", name = "train-stop" },
-	{ filter = "type", type = "straight-rail" },
-	{ filter = "type", type = "curved-rail-a" },
-	{ filter = "type", type = "curved-rail-b" },
-	{ filter = "type", type = "inserter" },
-	{ filter = "type", type = "pump" },
-	{ filter = "type", type = "loader-1x1" },
-}
-for _, name in ipairs(COMBINATOR_ENTITY_NAMES_ARRAY) do
-	table.insert(filter_built, { filter = "name", name = name })
-	table.insert(filter_built, { filter = "ghost_name", name = name })
-end
+	script.on_event(defines.events.on_built_entity, on_built, filter_built)
+	script.on_event(defines.events.on_robot_built_entity, on_built, filter_built)
 
-local filter_broken = {
-	{ filter = "name", name = "train-stop" },
-	{ filter = "type", type = "straight-rail" },
-	{ filter = "type", type = "curved-rail-a" },
-	{ filter = "type", type = "curved-rail-b" },
-	{ filter = "type", type = "inserter" },
-	{ filter = "type", type = "pump" },
-	{ filter = "type", type = "loader-1x1" },
-	{ filter = "rolling-stock" },
-}
-for _, name in ipairs(COMBINATOR_ENTITY_NAMES_ARRAY) do
-	table.insert(filter_broken, { filter = "name", name = name })
-	table.insert(filter_broken, { filter = "ghost_name", name = name })
+	local filter_broken = {
+		{ filter = "name", name = "train-stop" },
+		{ filter = "type", type = "straight-rail" },
+		{ filter = "type", type = "curved-rail-a" },
+		{ filter = "type", type = "curved-rail-b" },
+		{ filter = "rolling-stock" },
+	}
+	for _, name in ipairs(combinator_api.get_combinator_names()) do
+		table.insert(filter_broken, { filter = "name", name = name })
+		table.insert(filter_broken, { filter = "ghost_name", name = name })
+	end
+	for _, type in ipairs(stop_api.get_equipment_types()) do
+		table.insert(filter_broken, { filter = "type", type = type })
+	end
+	for _, name in ipairs(stop_api.get_equipment_names()) do
+		table.insert(filter_broken, { filter = "name", name = name })
+	end
+
+	script.on_event(defines.events.on_pre_player_mined_item, on_broken, filter_broken)
+	script.on_event(defines.events.on_robot_pre_mined, on_broken, filter_broken)
+	script.on_event(defines.events.on_entity_died, on_broken, filter_broken)
 end
 
 local function main()
@@ -909,18 +903,13 @@ local function main()
 	mod_settings.react_to_train_early_to_depot = true
 
 	--NOTE: There is a concern that it is possible to build or destroy important entities without one of these events being triggered, in which case the mod will have undefined behavior
-	script.on_event(defines.events.on_built_entity, on_built, filter_built)
-	script.on_event(defines.events.on_robot_built_entity, on_built, filter_built)
+	bind_filtered_game_events()
 	script.on_event(
 		{
 			defines.events.script_raised_built,
 			defines.events.script_raised_revive,
 			defines.events.on_entity_cloned,
 		}, on_built)
-
-	script.on_event(defines.events.on_pre_player_mined_item, on_broken, filter_broken)
-	script.on_event(defines.events.on_robot_pre_mined, on_broken, filter_broken)
-	script.on_event(defines.events.on_entity_died, on_broken, filter_broken)
 	script.on_event(defines.events.script_raised_destroy, on_broken)
 
 	script.on_event({ defines.events.on_pre_surface_deleted, defines.events.on_pre_surface_cleared }, on_surface_removed)

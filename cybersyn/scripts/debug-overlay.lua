@@ -206,6 +206,7 @@ local function update_stop_overlay(stop)
 	for comb_id in pairs(stop.combinator_set) do
 		table.insert(lines, table.concat({ "[item=cybersyn-combinator]", comb_id }))
 	end
+	table.insert(lines, table.concat(stop.layout.loading_equipment_pattern or {}))
 	set_text_overlay_text(overlay.text, lines)
 
 	-- Lines indicating associated combinators
@@ -318,3 +319,4 @@ on_combinator_disassociated(update_combinator_overlay)
 on_train_stop_destroyed(destroy_stop_overlay)
 on_train_stop_created(update_stop_overlay)
 on_train_stop_combinator_set_changed(update_stop_overlay)
+on_train_stop_loading_equipment_pattern_changed(update_stop_overlay)

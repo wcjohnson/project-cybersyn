@@ -6,13 +6,25 @@ local INF = math.huge
 
 if not combinator_api then combinator_api = {} end
 
+-- TODO: make this customizable. (how?)
 -- Set of entity names that should be considered combinators.
-COMBINATOR_ENTITY_NAMES_SET = {
+local combinator_names_set = {
 	[COMBINATOR_NAME] = true,
 }
 
 -- List of entity names that should be considered combinators.
-COMBINATOR_ENTITY_NAMES_ARRAY = map_table(COMBINATOR_ENTITY_NAMES_SET, function(v, k) return k end)
+local combinator_names = map_table(combinator_names_set, function(v, k) return k end)
+
+---Get a list of all entity names corresponding to combinators.
+function combinator_api.get_combinator_names()
+	return combinator_names
+end
+
+---Check if a string is the name of a combinator entity.
+---@param name string?
+function combinator_api.is_combinator_name(name)
+	return combinator_names_set[name or ""] or false
+end
 
 ---@param combinator Cybersyn.Combinator.Ephemeral?
 ---@return boolean?
@@ -83,7 +95,7 @@ function combinator_api.find_combinator_entities(surface, area, position, radius
 		area = area,
 		position = position,
 		radius = radius,
-		name = COMBINATOR_ENTITY_NAMES_ARRAY,
+		name = combinator_api.get_combinator_names(),
 	})
 end
 
@@ -98,7 +110,7 @@ function combinator_api.find_combinator_entity_ghosts(surface, area, position, r
 		area = area,
 		position = position,
 		radius = radius,
-		ghost_name = COMBINATOR_ENTITY_NAMES_ARRAY,
+		ghost_name = combinator_api.get_combinator_names(),
 	})
 end
 

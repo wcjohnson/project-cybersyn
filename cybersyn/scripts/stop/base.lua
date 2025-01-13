@@ -2,6 +2,8 @@
 
 if not stop_api then stop_api = {} end
 
+local bor = bit32.bor
+
 local defines_front = defines.rail_direction.front
 local defines_back = defines.rail_direction.back
 
@@ -113,4 +115,71 @@ function stop_api.get_stop_state(stop_id, skip_validation)
 	else
 		return is_valid(stop) and stop or nil
 	end
+end
+
+---Get all combinators associated to a stop.
+---@param stop Cybersyn.TrainStop
+---@return Cybersyn.Combinator[]
+function stop_api.get_associated_combinators(stop)
+	local combinators = {}
+	for comb_id in pairs(stop.combinator_set) do
+		local comb = combinator_api.get_combinator_state(comb_id)
+		if comb then
+			combinators[#combinators + 1] = comb
+		end
+	end
+	return combinators
+end
+
+---@enum Cybersyn.StopUpdateFlags Flags used to indicate what kinds of updates a stop queued for update might need. These are used as a performance optimization to avoid expensive updates.
+StopUpdateFlags = {
+	NONE = 0,
+	-- The stop's loading equipment may have changed.
+	EQUIPMENT = 1,
+	-- The stop's type may have changed. (refueler/depot/station)
+	TYPE = 2,
+	-- The stop's peripheral combinators (wagon control etc) may have changed.
+	-- Note that if combinators controlling type changed, TYPE flag should be
+	-- used also.
+	COMBINATORS = 4,
+	-- Set all update flags; can be used when you don't know the correct flags to set at the expense of some performance.
+	ALL = bit32.bnot(0),
+}
+
+---Mark a stop to have its internal state updated at the beginning of the next
+---dispatch loop.
+---@param stop_id UnitNumber The stop to update.
+---@param flags int Bitwise flags indicating which updates are needed.
+function stop_api.enqueue_stop_update(stop_id, flags)
+	local map_data = storage --[[@as MapData]]
+	if not map_data.stop_update_queue then
+		map_data.stop_update_queue = { [stop_id] = flags }
+	else
+		map_data.stop_update_queue[stop_id] = bor(map_data.stop_update_queue[stop_id] or 0, flags)
+	end
+end
+
+---Find the stop associated to the given rail using the rail cache.
+---@param rail_entity LuaEntity A *valid* rail.
+---@return Cybersyn.TrainStop? stop The stop state, if found. For performance reasons, this state is not checked for validity.
+function stop_api.find_stop_from_rail(rail_entity)
+	local map_data = (storage --[[@as MapData]])
+	local stop_id = map_data.rail_to_stop[rail_entity.unit_number]
+	if stop_id then return map_data.train_stops[stop_id] end
+end
+
+---Determine if the stop is a refueler.
+---@param stop_id UnitNumber
+---@return boolean
+function stop_api.is_refueler(stop_id)
+	-- LORD: fix
+	return false
+end
+
+---Determine if the stop is a station.
+---@param stop_id UnitNumber
+---@return boolean
+function stop_api.is_station(stop_id)
+	-- LORD: fix
+	return false
 end

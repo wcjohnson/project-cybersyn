@@ -959,23 +959,33 @@ function tick_init(map_data, mod_settings)
 		end
 	end
 
-	if map_data.queue_station_update then
-		for id, _ in pairs(map_data.queue_station_update) do
-			local station = map_data.stations[id]
-			if station then
-				local pre = station.allows_all_trains
-				if station.entity_comb1.valid then
-					set_station_from_comb(station)
-					if station.allows_all_trains ~= pre then
-						update_stop_if_auto(map_data, station, true)
-					end
-				else
-					on_station_broken(map_data, id, station)
-				end
-			end
+	if map_data.stop_update_queue then
+		local queue = map_data.stop_update_queue --[[@as {[uint]: uint}]]
+		map_data.stop_update_queue = nil
+		for id, flags in pairs(queue) do
+			internal_update_stop_state(id, flags)
 		end
-		map_data.queue_station_update = nil
 	end
+
+	-- LORD: Legacy code, should be completely unneeded now. Verify.
+	-- if map_data.queue_station_update then
+	-- 	for id, _ in pairs(map_data.queue_station_update) do
+
+	-- 		local station = map_data.stations[id]
+	-- 		if station then
+	-- 			local pre = station.allows_all_trains
+	-- 			if station.entity_comb1.valid then
+	-- 				set_station_from_comb(station)
+	-- 				if station.allows_all_trains ~= pre then
+	-- 					update_stop_if_auto(map_data, station, true)
+	-- 				end
+	-- 			else
+	-- 				on_station_broken(map_data, id, station)
+	-- 			end
+	-- 		end
+	-- 	end
+	-- 	map_data.queue_station_update = nil
+	-- end
 
 	map_data.tick_state = STATE_POLL_STATIONS
 	interface_raise_tick_init()

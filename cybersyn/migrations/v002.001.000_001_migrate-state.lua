@@ -4,6 +4,7 @@ game.print("Migrating Cybersyn: v002.001.000_001...")
 if not storage.combinators then storage.combinators = {} end
 if not storage.combinator_uis then storage.combinator_uis = {} end
 if not storage.train_stops then storage.train_stops = {} end
+if not storage.rail_to_stop then storage.rail_to_stop = {} end
 
 -- LORD: Close all open combinator GUIs for all players
 

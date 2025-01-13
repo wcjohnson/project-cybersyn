@@ -1,12 +1,14 @@
 # Internal Overhaul Patch
 
-This patch contains a significant overhaul of Cybersyn's internal systems, particularly focusing on combinators and train stops.
+This patch contains a significant overhaul of Cybersyn's internal systems, particularly focusing on combinators, train stops, and layout detection/automatic allowlist.
 
 The patch is significantly larger than I intended it to be. Every time I pulled on a thread three more would unravel, and I ultimately ended up rewriting a significant portion of the mod. Unfortunately these systems were pretty spaghettified and if we want to overhaul it there is no good smaller patch. We just have to rip the band aid off all at once.
 
-This patch is intended to not break userspace. When complete and tested, users should be able to migrate their saves with no changes required on their part. However, that being said...
+This patch is intended to not break userspace. Once everything is tested and complete, users who are using Cybersyn as described in the documentation should not have their saves break. However, that being said, two important things to note:
 
-**WARNING: THIS PATCH CONTAINS IRREVERSIBLE DATA MIGRATIONS.** Internal saved state has been considerably reworked. Once these migrations have been applied to a save file, it is impossible to use that save file with older versions of Cybersyn. **When testing this patch, back up and duplicate your save file, and only run this patch on forked save files!**
+1) This patch fixes numerous bugs and nondeterministic situations that existed in previous versions of Cybersyn. It may be the case that some users were building stations that actually relied on these bugs or happened to work in spite of them. Any such station is likely to break.
+
+2) **WARNING: THIS PATCH CONTAINS IRREVERSIBLE DATA MIGRATIONS.** Internal saved state has been considerably reworked. Once these migrations have been applied to a save file, it is impossible to use that save file with older versions of Cybersyn. **When testing this patch, back up and duplicate your save file, and only run this patch on forked save files!**
 
 ## User-facing changes
 
@@ -24,7 +26,7 @@ Due to the size of this PR, I avoided making updates to the remote interface, wh
 
 - Due to major changes in internal data layout, consumers of `interface.read_global` and `write_global` will need to check their code. (See `global.lua` and `types.lua`)
 - The remote event `on_combinator_changed` is obsolete and has been removed. This will be replaced with exposed versions of the new internal combinator events at a later time.
-- `interface.get_id_from_comb`, `interface.combinator_update` removed.
+- `interface.get_id_from_comb`, `interface.combinator_update`, `interface.update_stop_from_rail` removed.
 
 ## Internal changes
 
@@ -41,11 +43,13 @@ Cybersyn now has an internal event backplane, implemented in `events.lua`. The c
 - The modal section of the combinator UI is now generated dynamically based on the combinator mode, rather than through showing/hiding of static elements.
 
 ### Train stop abstraction
-- Cybersyn train stops (train stops with at least one combinator in the yellow box range) are treated as abstract state objects.
+- Train stops are now treated as abstract state objects. The abstraction unifies over depots, refuelers, and stations.
 - All Cybersyn train stops now have stop layout. (Depots do not use the generated allow-list, but technically they now have one internally.)
-- Stop layout computation algorithm has been rewritten. It now accounts for 2.0 rails, and is able to measure in units of tiles in addition to hard-coded 6-length wagons. (This should make it possible to provide better support for modded wagons of odd lengths in the future.)
-- Stop layout computation locates and associates distant combinators (things like wagon control that are far from the associated stop)
-- Stop layout is event driven and extensible.
+- Stop layout computation algorithm has been rewritten for correctness and determinism.
+- Stop equipment detection now uses caching to avoid rebuilding the entire stop layout every time a piece of equipment is built.
+- Loading equipment layout is stored in the stop state on a per-tile basis.
+- Stop loading equipment patterns no longer contain `nil` entries. `0` is used to represent a car with no equipment alongside it.
+
 
 ### Layout engine rewrite
 - Rules of Combinator Association:
@@ -53,11 +57,11 @@ Cybersyn now has an internal event backplane, implemented in `events.lua`. The c
   - If S is nonempty, the stop in S that is closest to the front of the combinator (output side) is the associated stop.
   - If S is empty but R is nonempty, the rails in R are checked, beginning from the rail closest to the front of the combinator (output side) and moving towards more distant rails. The first such rail that is in the railset of a stop, that stop is the associated stop.
   - If no stop can be found according to these rules, the combinator is orphaned.
-- Events That Trigger These Rules:
-  - If a new combinator is built, it is re-associated.
-  - If a new stop is built, all combinators for which the new stop would be inside the yellow radius are re-associated.
-  - When new rails are built, it's checked if the rail would affect the layout of a stop; if so, the stop's layout is recomputed.
-  - When the layout of a stop is recomputed, all combinators within the bounding box, as well as all previously associated combinators, are re-associated.
-  - When a stop is destroyed, all formerly associated combinators are re-associated.
-  - When a combinator is rotated, it is re-associated.
+  - Events That Trigger These Rules:
+    - If a new combinator is built, it is re-associated.
+    - If a new stop is built, all combinators for which the new stop would be inside the yellow radius are re-associated.
+    - When new rails are built, it's checked if the rail would affect the layout of a stop; if so, the stop's layout is recomputed.
+    - When the layout of a stop is recomputed, all combinators within the bounding box, as well as all previously associated combinators, are re-associated.
+    - When a stop is destroyed, all formerly associated combinators are re-associated.
+    - When a combinator is rotated, it is re-associated.
 

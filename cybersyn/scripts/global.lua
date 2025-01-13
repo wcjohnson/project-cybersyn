@@ -5,6 +5,7 @@
 ---@field public combinator_uis {[PlayerIndex]: Cybersyn.Combinator.PlayerUiState} The per-player state of open Cybersyn combinator UIs.
 ---@field public train_stops {[UnitNumber]: Cybersyn.TrainStop} All the recognized Cybersyn train stops in the game world, indexed by their unit number.
 ---@field public rail_to_stop {[UnitNumber]: UnitNumber} A mapping of rail entities to their automatically-associated train stops, indexed by the rail's unit number.
+---@field public stop_update_queue {[UnitNumber]: int}? Map from unit numbers of stops needing updates to flags indicating which updates are needed.
 ---@field public stations {[uint]: Station}
 ---@field public active_station_ids uint[]
 ---@field public warmup_station_ids uint[]
