@@ -91,6 +91,7 @@ function reassociate_recursive(combinators, depth)
 		local target_stop_entity, target_rail_entity = combinator_api.find_associable_entity(combinator.entity)
 		---@type Cybersyn.TrainStop?
 		local target_stop = nil
+		local is_proximate = nil
 		if target_stop_entity then
 			local stop = stop_api.get_stop_state(target_stop_entity.unit_number, true)
 			if stop then
@@ -98,6 +99,7 @@ function reassociate_recursive(combinators, depth)
 				if combinator.stop_id == stop.id then goto continue end
 				-- Comb needs to be reassociated to target stop.
 				target_stop = stop
+				is_proximate = true
 			else
 				-- Comb is causing the creation of a new stop, which needs to be
 				-- handled by recursion.
@@ -126,6 +128,7 @@ function reassociate_recursive(combinators, depth)
 		if target_stop and (not target_stop.is_being_destroyed) then
 			target_stop.combinator_set[combinator.id] = true
 			combinator.stop_id = target_stop.id
+			combinator.is_proximate = is_proximate
 			affected_stop_set[target_stop.id] = true
 			raise_combinator_associated(combinator, target_stop)
 		end

@@ -4,7 +4,7 @@
 ---Create a stored combinator state.
 ---@param combinator_entity LuaEntity A *valid* reference to a non-ghost combinator.
 ---@return Cybersyn.Combinator #The new combinator state.
-function combinator_api.create_combinator_state(combinator_entity)
+local function create_combinator_state(combinator_entity)
 	local map_data = (storage --[[@as MapData]])
 	local combinator_id = combinator_entity.unit_number
 	if not combinator_id then
@@ -22,7 +22,7 @@ end
 ---Destroy a stored combinator state.
 ---@param combinator_id UnitNumber
 ---@return boolean `true` if the combinator was removed, `false` if it was not found.
-function combinator_api.destroy_combinator_state(combinator_id)
+local function destroy_combinator_state(combinator_id)
 	local map_data = (storage --[[@as MapData]])
 	if map_data.combinators[combinator_id] then
 		map_data.combinators[combinator_id] = nil
@@ -32,7 +32,7 @@ function combinator_api.destroy_combinator_state(combinator_id)
 end
 
 ---@param comb_id UnitNumber
-function combinator_api.destroy_combinator(comb_id)
+function internal_destroy_combinator(comb_id)
 	local comb = combinator_api.get_combinator_state(comb_id, true)
 	if not comb then return end
 	comb.is_being_destroyed = true
@@ -51,7 +51,7 @@ function combinator_api.destroy_combinator(comb_id)
 	end
 
 	raise_combinator_destroyed(comb)
-	combinator_api.destroy_combinator_state(comb.id)
+	destroy_combinator_state(comb.id)
 	if should_destroy_stop then
 		---@diagnostic disable-next-line: need-check-nil
 		stop_api.destroy_stop(stop.id)
@@ -59,14 +59,14 @@ function combinator_api.destroy_combinator(comb_id)
 end
 
 ---@param comb_entity LuaEntity A *valid* combinator entity
-function combinator_api.create_combinator(comb_entity)
+function internal_create_combinator(comb_entity)
 	local comb_id = comb_entity.unit_number --[[@as UnitNumber]]
 	local comb = combinator_api.get_combinator_state(comb_id, true)
 	if comb then
 		-- Should be impossible
 		return
 	end
-	comb = combinator_api.create_combinator_state(comb_entity)
+	comb = create_combinator_state(comb_entity)
 	raise_combinator_created(comb)
 	stop_api.reassociate_combinators({ comb })
 end

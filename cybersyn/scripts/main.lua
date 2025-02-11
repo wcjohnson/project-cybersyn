@@ -266,7 +266,7 @@ local function on_combinator_built(map_data, comb, tags)
 		raise_combinator_ghost_revived(tags.ghost_unit_number, comb)
 	end
 
-	combinator_api.create_combinator(comb)
+	internal_create_combinator(comb)
 
 	-- LORD: legacy code, replicate functionality in event bindings.
 	-- local pos_x = comb.position.x
@@ -368,13 +368,13 @@ local function on_combinator_ghost_built(map_data, comb)
 	local t = comb.tags or {}
 	t.ghost_unit_number = comb.unit_number
 	comb.tags = t
-	raise_combinator_ghost_created(combinator_api.to_ephemeral_reference(comb))
+	raise_combinator_ghost_created(combinator_api.create_ephemeral_reference(comb))
 end
 
 ---@param map_data MapData
 ---@param comb LuaEntity
 function on_combinator_ghost_broken(map_data, comb)
-	raise_combinator_ghost_destroyed(combinator_api.to_ephemeral_reference(comb))
+	raise_combinator_ghost_destroyed(combinator_api.create_ephemeral_reference(comb))
 end
 
 ---@param map_data MapData
@@ -423,7 +423,7 @@ end
 ---@param map_data MapData
 ---@param comb LuaEntity
 function on_combinator_broken(map_data, comb)
-	combinator_api.destroy_combinator(comb.unit_number)
+	internal_destroy_combinator(comb.unit_number)
 
 	-- LORD: legacy code, replicate functionality in event bindings.
 
@@ -782,11 +782,12 @@ local function on_surface_removed(event)
 end
 
 local function on_paste(event)
+	debug_log("on_paste", event)
 	local entity = event.destination
 	if not entity or not entity.valid then return end
 
 	if combinator_api.is_combinator_name(entity.name) then
-		raise_combinator_settings_written(combinator_api.to_ephemeral_reference(entity))
+		raise_combinator_setting_changed(combinator_api.create_ephemeral_reference(entity), nil)
 	end
 end
 
@@ -894,6 +895,11 @@ local function bind_filtered_game_events()
 	script.on_event(defines.events.on_entity_died, on_broken, filter_broken)
 end
 
+-- LORD: The event cases covered below don't handle the situation when a
+-- blueprint is overlaid on top of existing combinators. This situation is
+-- very difficult to handle. Example code to do so is here:
+--   https://github.com/danielmartin0/Cerys-Moon-of-Fulgora/blob/main/scripts/pre_blueprint_pasted.lua
+
 local function main()
 	grab_all_settings()
 
@@ -923,7 +929,7 @@ local function main()
 
 	script.on_event(defines.events.on_runtime_mod_setting_changed, on_settings_changed)
 
-	register_gui_actions()
+	internal_bind_gui_events()
 
 	local MANAGER_ENABLED = mod_settings.manager_enabled
 

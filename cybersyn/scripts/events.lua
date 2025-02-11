@@ -35,18 +35,7 @@ local function event(name, p1, p2, p3, p4, p5)
 	local function raise(...)
 		-- LORD: remove this
 		if (game) then
-			local arg1 = select(1, ...)
-			if type(arg1) == "nil" or type(arg1) == "number" or type(arg1) == "string" or type(arg) == "boolean" then
-				arg1 = tostring(arg1)
-			else
-				arg1 = serpent.line(arg1)
-			end
-
-			game.print(
-				"DEBUG: Event raised: " ..
-				name .. " " .. arg1,
-				{ skip = defines.print_skip.never, sound = defines.print_sound.never }
-			)
+			debug_log("DEBUG: Event raised:", name, ...)
 		end
 		for i = 1, #bindings do
 			bindings[i](...)
@@ -78,19 +67,12 @@ on_event_meta, raise_event_meta, meta_event_meta = event("event_meta",
 -- Event raised when a setting is changed on either an ephemeral or real
 -- combinator.
 -- - Arg 1 - `Cybersyn.Combinator.Settings` - reference to the combinator or ghost whose setting changed
--- - Arg 2 - `string` - the name of the setting that changed
--- - Arg 3 - `any` - the new value of the setting
--- - Arg 4 - `any` - the old value of the setting
+-- - Arg 2 - `string?` - the name of the setting that changed, if known. If `nil`, no assumptions may be made about which if any settings have changed.
+-- - Arg 3 - `any` - the new value of the setting, if the setting name was given
+-- - Arg 4 - `any` - the old value of the setting, if the setting name was given
 on_combinator_setting_changed, raise_combinator_setting_changed, meta_combinator_setting_changed = event(
 	"combinator_setting_changed",
-	"Cybersyn.Combinator.Settings", "string", "any", "any", "nil")
-
--- Event raised when combinator or ghost settings are changed en masse. For performance
--- reasons, no attempt is made to diff against prior settings. Consumers of
--- this event should be aware that any or no settings may have changed.
-on_combinator_settings_written, raise_combinator_settings_written, meta_combinator_settings_written = event(
-	"combinator_settings_written",
-	"Cybersyn.Combinator.Ephemeral", "nil", "nil", "nil", "nil")
+	"Cybersyn.Combinator.Ephemeral", "any", "any", "any", "nil")
 
 -- Event raised when a state is updated on a live combinator.
 -- For performance reasons, states are not compared to old states. Consumers of

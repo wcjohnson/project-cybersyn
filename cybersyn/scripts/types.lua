@@ -15,16 +15,16 @@
 ---@field public id UnitNumber The immutable unit number of the combinator entity.
 ---@field public stop_id? UnitNumber The unit number of the train stop this combinator is associated with, if any.
 ---@field public output? LuaEntity The hidden output entity used to write the combinator's output, if it exists.
----@field public distance? uint If this field exists, it indicates the combinator is distant from its associated train stop along the nearby rail by this many tiles. Used for e.g. wagon control combs.
 ---@field public is_being_destroyed true? `true` if the combinator is being removed from state at this time.
+---@field public is_proximate true? `true` if the combinator is within the proximity of a train stop.
 
 ---@class Cybersyn.Combinator.Settings: Cybersyn.Combinator.Ephemeral Transient object allowing manipulation of the settings of a Cybersyn combinator OR its ghost. Not to be held long-term or stored.
----@field public map_data MapData Reference to global storage, in the event we implement settings that need this.
----@field public control_behavior LuaArithmeticCombinatorControlBehavior?
----@field public parameters ArithmeticCombinatorParameters?
+---@field public legacy_control_behavior LuaArithmeticCombinatorControlBehavior? Control behavior of a legacy combinator
 
 ---@class Cybersyn.Combinator.PlayerUiState Per-player state of open Cybersyn combinator UIs.
+---@field public player_index int The player index of the player whose UI is open.
 ---@field public open_combinator? Cybersyn.Combinator.Ephemeral The combinator OR ghost currently open in the player's UI, if any.
+---@field public open_combinator_unit_number? UnitNumber The unit number of the combinator currently open in the player's UI, if any. This is stored separately to allow for cases where the combinator is removed while the UI is open, eg ghost revival.
 
 ---@class Cybersyn.TrainStop An opaque reference to a train stop entity that is managed by Cybersyn.
 ---@field public entity LuaEntity The train stop entity.

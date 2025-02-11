@@ -332,23 +332,23 @@ local function on_gui_closed(event)
 	end
 end
 
+-- LORD: legacy code, see internal_bind_gui_events()
+-- function register_gui_actions()
+-- 	flib_gui.add_handlers({
+-- 		["comb_close"] = handle_close,
+-- 		["comb_refresh_allow"] = handle_refresh_allow,
+-- 		["comb_drop_down"] = handle_drop_down,
+-- 		["comb_pr_switch"] = handle_pr_switch,
+-- 		["comb_network"] = handle_network,
+-- 		["comb_setting"] = handle_setting,
+-- 		["comb_setting_flip"] = handle_setting_flip,
+-- 	})
+-- 	flib_gui.handle_events()
+-- 	-- LORD: temporarily disabled
 
-function register_gui_actions()
-	flib_gui.add_handlers({
-		["comb_close"] = handle_close,
-		["comb_refresh_allow"] = handle_refresh_allow,
-		["comb_drop_down"] = handle_drop_down,
-		["comb_pr_switch"] = handle_pr_switch,
-		["comb_network"] = handle_network,
-		["comb_setting"] = handle_setting,
-		["comb_setting_flip"] = handle_setting_flip,
-	})
-	flib_gui.handle_events()
-	-- LORD: temporarily disabled
-
-	--script.on_event(defines.events.on_gui_opened, on_gui_opened)
-	--script.on_event(defines.events.on_gui_closed, on_gui_closed)
-end
+-- 	--script.on_event(defines.events.on_gui_opened, on_gui_opened)
+-- 	--script.on_event(defines.events.on_gui_closed, on_gui_closed)
+-- end
 
 ---@param comb LuaEntity
 ---@param player LuaPlayer

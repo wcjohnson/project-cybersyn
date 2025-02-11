@@ -1,3 +1,17 @@
+## Fixes
+
+- Combinators: Fixed issue where saving with an open combinator UI would make it impossible to open a combinator UI after reloading. (Migration will fix this for existing saves by force-closing all UIs.)
+- Combinators: UI has been redesigned; options may appear in slightly different positions than in prior versions. (The functionality of the options has not changed.)
+- Combinators: When a ghost is built while UI is open, UI will seamlessly transition to configuring the built combinator.
+- Layout engine: The stretch of rail behind the train stop that is considered part of the layout must now consist of only non-elevated straight rails. This fixes various issues with strange allow lists near elevated rails, diagonals, and curves.
+- Layout engine: Finding a stop from a rail now uses the same algorithm as the rest of the layout engine. This fixes various issues where changing equipment beside a rail wouldn't update the allow list properly.
+- Layout engine: When associating combinators far from a station (e.g. wagon control) the combinators will prefer to associate with the station along the rail their output end is pointing towards. (This only applies when the combinators are ambiguously sandwiched between rails.)
+- Layout engine: Fixed multiple stations along a single rail line having overlapping allow lists.
+
+## Enhancements
+
+- Added a new map setting, "Enable debug overlay" - when enabled, overlays will be rendered over various Cybersyn objects showing information about their internal state.
+
 # Internal Overhaul Patch
 
 This patch contains a significant overhaul of Cybersyn's internal systems, particularly focusing on combinators, train stops, and layout detection/automatic allowlist.

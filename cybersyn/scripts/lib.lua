@@ -75,6 +75,41 @@ function dual_pairs(t1, t2)
 	end
 end
 
+function debug_log(msg, ...)
+	if not game then return end
+	local str = { msg }
+	for i = 1, select("#", ...) do
+		local val = select(i, ...)
+		local val_t = type(val)
+		if val_t == "nil" or val_t == "number" or val_t == "string" or val_t == "boolean" then
+			str[#str + 1] = tostring(val)
+		else
+			str[#str + 1] = serpent.line(val, { maxlevel = 5, maxnum = 20 })
+		end
+	end
+	game.print(table.concat(str, " "),
+		{
+			skip = defines.print_skip.never,
+			sound = defines.print_sound.never,
+			game_state = false,
+		})
+end
+
+---Given an array and a predicate, return the first index in the array for which
+---the predicate returns `true`, or `nil` if no such index exists.
+---@generic T
+---@param A T[]
+---@param f fun(v: T): boolean
+---@return integer?
+function find(A, f)
+	for i = 1, #A do
+		if f(A[i]) then
+			return i
+		end
+	end
+	return nil
+end
+
 ---Filter an array by a predicate, creating a new array containing only those
 ---elements for which the predicate returns `true`.
 ---@generic T

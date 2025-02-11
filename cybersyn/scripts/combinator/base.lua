@@ -8,6 +8,7 @@ if not combinator_api then combinator_api = {} end
 
 -- TODO: make this customizable. (how?)
 -- Set of entity names that should be considered combinators.
+---@type {[string]: true?}
 local combinator_names_set = {
 	[COMBINATOR_NAME] = true,
 }
@@ -33,13 +34,20 @@ local function is_valid(combinator)
 end
 combinator_api.is_valid = is_valid
 
----Check if a combinator is a ghost.
+---Check if an ephemeral combinator is a ghost.
 ---@param combinator Cybersyn.Combinator.Ephemeral?
 ---@return boolean is_ghost `true` if combinator is a ghost
 ---@return boolean is_valid `true` if combinator is valid, ghost or no
 function combinator_api.is_ghost(combinator)
 	if (not combinator) or (not combinator.entity) or (not combinator.entity.valid) then return false, false end
 	if combinator.entity.name == "entity-ghost" then return true, true else return false, true end
+end
+
+---Check if an ephemeral combinator reference refers to a legacy combinator.
+---@param combinator Cybersyn.Combinator.Ephemeral A *valid* ephemeral combinator reference.
+---@return boolean #`true` if combinator is a legacy combinator
+function combinator_api.is_legacy(combinator)
+	return true
 end
 
 ---Retrieve a real combinator from storage by its `unit_number`.
@@ -78,9 +86,32 @@ end
 ---a *valid* combinator or a ghost.
 ---@param entity LuaEntity
 ---@return Cybersyn.Combinator.Ephemeral
-function combinator_api.to_ephemeral_reference(entity)
+function combinator_api.create_ephemeral_reference(entity)
 	return {
 		entity = entity,
+	}
+end
+
+---Determines if the given entity is a valid combinator *or* ghost and returns
+---an ephemeral reference to it if so, nil if not.
+---@param entity LuaEntity
+---@return Cybersyn.Combinator.Ephemeral?
+function combinator_api.entity_to_ephemeral(entity)
+	if (not entity) or (not entity.valid) then return nil end
+	local true_name = entity.name == "entity-ghost" and entity.ghost_name or entity.name
+	if combinator_api.is_combinator_name(true_name) then
+		return combinator_api.create_ephemeral_reference(entity)
+	end
+	return nil
+end
+
+---@param combinator Cybersyn.Combinator.Ephemeral
+---@return Cybersyn.Combinator.Settings
+function combinator_api.get_combinator_settings(combinator)
+	local control_behavior = combinator.entity.get_or_create_control_behavior() --[[@as LuaArithmeticCombinatorControlBehavior]]
+	return {
+		entity = combinator.entity,
+		legacy_control_behavior = control_behavior,
 	}
 end
 
