@@ -66,8 +66,8 @@ on_event_meta, raise_event_meta, meta_event_meta = event("event_meta",
 
 -- Event raised when a setting is changed on either an ephemeral or real
 -- combinator.
--- - Arg 1 - `Cybersyn.Combinator.Settings` - reference to the combinator or ghost whose setting changed
--- - Arg 2 - `string?` - the name of the setting that changed, if known. If `nil`, no assumptions may be made about which if any settings have changed.
+-- - Arg 1 - `Cybersyn.Combinator.Ephemeral` - reference to the combinator or ghost whose setting changed
+-- - Arg 2 - `string?` - the name of the setting that changed, if known. If `nil`, you must pessimistically assume any/all settings have changed.
 -- - Arg 3 - `any` - the new value of the setting, if the setting name was given
 -- - Arg 4 - `any` - the old value of the setting, if the setting name was given
 on_combinator_setting_changed, raise_combinator_setting_changed, meta_combinator_setting_changed = event(

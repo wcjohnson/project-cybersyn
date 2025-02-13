@@ -32,39 +32,3 @@ end
 function combinator_api.get_combinator_mode(name)
 	return modes[name or ""]
 end
-
-combinator_api.register_combinator_mode({
-	name = "station_control",
-	localized_string = "cybersyn-gui.comb2",
-	create_gui = function(parent)
-	end,
-	update_gui = function(parent, settings, changed_setting)
-	end,
-})
-
-combinator_api.register_combinator_mode({
-	name = "depot",
-	localized_string = "cybersyn-gui.depot",
-	create_gui = function(parent)
-	end,
-	update_gui = function(parent, settings, changed_setting)
-	end,
-})
-
-combinator_api.register_combinator_mode({
-	name = "refueler",
-	localized_string = "cybersyn-gui.refueler",
-	create_gui = function(parent)
-	end,
-	update_gui = function(parent, settings, changed_setting)
-	end,
-})
-
-combinator_api.register_combinator_mode({
-	name = "wagon_control",
-	localized_string = "cybersyn-gui.wagon-manifest",
-	create_gui = function(parent)
-	end,
-	update_gui = function(parent, settings, changed_setting)
-	end,
-})

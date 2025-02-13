@@ -1,5 +1,5 @@
 -- Sumneko gives lots of false errors in this file due to no partial typing in
--- flib_gui's `elem_mods`. I'm disabling the missing-fields diagnostic for the entire file.
+-- flib_gui's `elem_mods`.
 ---@diagnostic disable: missing-fields
 
 local flib_gui = require("__flib__.gui")
@@ -58,32 +58,71 @@ local function update_mode_section(window, settings, updated_setting)
 	desired_mode.update_gui(mode_section, settings, updated_setting)
 end
 
----@param settings Cybersyn.Combinator.Settings
-local function rebuild_mode_sections(settings)
+---Run a callback on each open combinator GUI.
+---@param callback fun(state: Cybersyn.Combinator.PlayerUiState, ui_root: LuaGuiElement)
+function combinator_api.for_each_open_combinator_gui(callback)
 	local map_data = storage --[[@as MapData]]
 	for _, ui_state in pairs(map_data.combinator_uis) do
-		if ui_state.open_combinator_unit_number == settings.entity.unit_number then
-			local player = game.get_player(ui_state.player_index)
-			if player then
-				local comb_gui = player.gui.screen[WINDOW_NAME]
-				if comb_gui then rebuild_mode_section(comb_gui, settings) end
-			end
+		local player = game.get_player(ui_state.player_index)
+		if player then
+			local comb_gui = player.gui.screen[WINDOW_NAME]
+			if comb_gui then callback(ui_state, comb_gui) end
 		end
 	end
 end
 
 ---@param settings Cybersyn.Combinator.Settings
-local function update_mode_sections(settings, updated_setting)
-	local map_data = storage --[[@as MapData]]
-	for _, ui_state in pairs(map_data.combinator_uis) do
-		if ui_state.open_combinator_unit_number == settings.entity.unit_number then
-			local player = game.get_player(ui_state.player_index)
-			if player then
-				local comb_gui = player.gui.screen[WINDOW_NAME]
-				if comb_gui then update_mode_section(comb_gui, settings, updated_setting) end
+local function rebuild_mode_sections(settings)
+	local comb_unit_number = settings.entity.unit_number
+	combinator_api.for_each_open_combinator_gui(
+		function(ui_state, comb_gui)
+			if ui_state.open_combinator_unit_number == comb_unit_number then
+				rebuild_mode_section(comb_gui, settings)
 			end
 		end
+	)
+end
+
+---@param settings Cybersyn.Combinator.Settings
+local function update_mode_sections(settings, updated_setting)
+	local comb_unit_number = settings.entity.unit_number
+	combinator_api.for_each_open_combinator_gui(
+		function(ui_state, comb_gui)
+			if ui_state.open_combinator_unit_number == comb_unit_number then
+				update_mode_section(comb_gui, settings, updated_setting)
+			end
+		end
+	)
+end
+
+---Generic flib wrapper to attach setting and gui info before calling the
+---handler function.
+---@param event flib.GuiEventData
+---@param handler function
+function combinator_api.flib_settings_handler_wrapper(event, handler)
+	local player = game.get_player(event.player_index)
+	if (not player) then return end
+	local gui_root = player.gui.screen[WINDOW_NAME]
+	if (not gui_root) then return end
+	local state = combinator_api.get_gui_state(event.player_index)
+	if state and state.open_combinator and combinator_api.is_valid(state.open_combinator) then
+		local mode_section = gui_root["frame"]["vflow"]["mode_settings"]
+		local settings = combinator_api.get_combinator_settings(state.open_combinator)
+		handler(event, settings, mode_section, player, state, gui_root)
 	end
+end
+
+---Generic flib handler to handle toggling a flag based setting.
+---@param event flib.GuiEventData
+---@param settings Cybersyn.Combinator.Settings
+function combinator_api.generic_checkbox_handler(event, settings)
+	local elt = event.element
+	if not elt then return end
+	local setting = elt.tags.setting
+	local inverted = elt.tags.inverted
+	local new_value = event.element.state
+	if inverted then new_value = (not new_value) end
+	combinator_api.write_setting(settings, combinator_api.settings[setting], new_value)
 end
 
 ---@param e EventData.on_gui_click
@@ -356,6 +395,10 @@ function internal_bind_gui_events()
 		-- ["comb_setting"] = handle_setting,
 		-- ["comb_setting_flip"] = handle_setting_flip,
 	})
+	flib_gui.add_handlers({
+		["generic_checkbox_handler"] = combinator_api.generic_checkbox_handler,
+	}, combinator_api.flib_settings_handler_wrapper)
+
 	flib_gui.handle_events()
 	script.on_event(defines.events.on_gui_opened, on_gui_opened)
 	script.on_event(defines.events.on_gui_closed, on_gui_closed)

@@ -1,16 +1,32 @@
-## Fixes
-
-- Combinators: Fixed issue where saving with an open combinator UI would make it impossible to open a combinator UI after reloading. (Migration will fix this for existing saves by force-closing all UIs.)
-- Combinators: UI has been redesigned; options may appear in slightly different positions than in prior versions. (The functionality of the options has not changed.)
-- Combinators: When a ghost is built while UI is open, UI will seamlessly transition to configuring the built combinator.
-- Layout engine: The stretch of rail behind the train stop that is considered part of the layout must now consist of only non-elevated straight rails. This fixes various issues with strange allow lists near elevated rails, diagonals, and curves.
-- Layout engine: Finding a stop from a rail now uses the same algorithm as the rest of the layout engine. This fixes various issues where changing equipment beside a rail wouldn't update the allow list properly.
-- Layout engine: When associating combinators far from a station (e.g. wagon control) the combinators will prefer to associate with the station along the rail their output end is pointing towards. (This only applies when the combinators are ambiguously sandwiched between rails.)
-- Layout engine: Fixed multiple stations along a single rail line having overlapping allow lists.
-
-## Enhancements
+## Enhancements/Changes
 
 - Added a new map setting, "Enable debug overlay" - when enabled, overlays will be rendered over various Cybersyn objects showing information about their internal state.
+- Combinators: UI has been redesigned; options may appear in different positions than in prior versions. (The functionality of the options has not changed.)
+- Combinators: UI automatically transitions from ghost to live combinator when ghost is revived.
+- Combinators: Only the mode-defining combinator (Station/Depot/Refueler) is required to be adjacent to the station. Ancillary combinators such as station control and wagon control, as well as future combinator modes that will be released in upcoming versions, may be placed anywhere within the station's bounding box, which can be viewed using the debug overlay.
+
+## Fixes
+
+**NOTE:** Some of these fixes may constitute "breaking changes" for your save file if you have setups that rely on the original bugged behavior. Please read carefully.
+
+- Combinators: Fixed issue where saving with an open combinator UI would make it impossible to open a combinator UI after reloading. (Migration will force-close any stuck open UIs.)
+- Combinators: Multiple players may now have the same combinator open at the same time. When one player makes changes, all open GUIs will be updated to reflect the change.
+- Combinators: When combinators are in ambiguous position (sandwiched between rails or stops) they will prefer to associate with whichever entity is closest to the front (output) end of the combinator. In previous versions, ambiguous combinators had undefined behavior depending on build order.
+- Train stops: The stretch of rail behind the train stop that is considered part of the layout must now consist of only non-elevated straight rails. This fixes various issues with strange allow lists near elevated rails, diagonals, and curves.
+- Train stops: Finding a stop from a rail now uses the same algorithm as the rest of the layout engine. This fixes various issues where changing equipment beside a rail wouldn't update the allow list properly.
+- Train stops: Fixed multiple stations along a single rail line having overlapping allow lists.
+
+## Remote interface changes
+
+- Due to major changes in internal data layout, consumers of `interface.read_global` and `interface.write_global` will need to check their code. (See `global.lua` and `types.lua`)
+- The remote event `on_combinator_changed` is obsolete and has been removed. This will be replaced with exposed versions of the new internal combinator events at a later time.
+- `interface.get_id_from_comb`, `interface.combinator_update`, `interface.update_stop_from_rail` removed.
+
+## Internal Changes
+
+### Event Bus
+
+Probably the most significant internal change;
 
 # Internal Overhaul Patch
 
@@ -38,9 +54,7 @@ This patch is intended to not break userspace. Once everything is tested and com
 
 Due to the size of this PR, I avoided making updates to the remote interface, which can be done separately. Generally speaking, I tried not to break the existing remote interface, however in some cases it is simply inevitable.
 
-- Due to major changes in internal data layout, consumers of `interface.read_global` and `write_global` will need to check their code. (See `global.lua` and `types.lua`)
-- The remote event `on_combinator_changed` is obsolete and has been removed. This will be replaced with exposed versions of the new internal combinator events at a later time.
-- `interface.get_id_from_comb`, `interface.combinator_update`, `interface.update_stop_from_rail` removed.
+
 
 ## Internal changes
 
