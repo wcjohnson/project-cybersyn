@@ -80,9 +80,13 @@ local function search_for_station_end(state)
 
 	-- If we reach a stop that isn't our target stop, abort.
 	if current_rail == state.front_rail and state.front_stop ~= state.layout_stop then
-		return false
+		if not (state.ignore_set and state.ignore_set[state.front_stop.unit_number]) then
+			return false
+		end
 	elseif current_rail == state.back_rail and state.back_stop ~= state.layout_stop then
-		return false
+		if not (state.ignore_set and state.ignore_set[state.back_stop.unit_number]) then
+			return false
+		end
 	end
 
 	-- Extend the bounding box to include the current rail.
@@ -227,8 +231,7 @@ end)
 -- When rails are built, we need to re-evaluate layouts of affected stops.
 -- We must be efficient and rely heavily on the rail cache, as building rails
 -- is common/spammy.
----@param rail LuaEntity
-function internal_rail_built(rail)
+on_entity_built_rail(function(rail)
 	-- If this is the connected-rail of a stop, we must update that stop's
 	-- layout first to populate the rail cache.
 	local connected_stop = get_connected_stop(rail)
@@ -295,11 +298,10 @@ function internal_rail_built(rail)
 			stop_api.compute_layout(stop)
 		end
 	end
-end
+end)
 
 -- When a rail is being destroyed, we need to re-evaluate layouts of affected stops.
----@param rail LuaEntity
-function internal_rail_broken(rail)
+on_entity_broken_rail(function(rail)
 	-- TODO: it is possible that breaking a rail would remove a split in the tracks,
 	-- causing a stop that was not associated with that rail to be enlarged. That case requires a more complex
 	-- algorithm and isn't handled right now.
@@ -307,4 +309,25 @@ function internal_rail_broken(rail)
 	if stop then
 		stop_api.compute_layout(stop, { [rail.unit_number] = true })
 	end
+end)
+
+-- When a train stop is built/broken check its attached rail, as well as the rails
+-- front and back from it, for other stops. If any are found, we need to
+-- recompute the layout of those stops.
+---@param stop_entity LuaEntity
+local function recompute_nearby_stop_layouts(stop_entity, is_being_destroyed)
+	local r1 = stop_entity.connected_rail
+	if not r1 then return end
+	local ies = is_being_destroyed and { [stop_entity.unit_number] = true }
+	local s0 = stop_api.get_stop_state(stop_entity.unit_number, true)
+	local r2, _, _, r3 = get_all_connected_rails(r1)
+	local s1, s2, s3 = r1 and find_stop_from_rail(r1), r2 and find_stop_from_rail(r2), r3 and find_stop_from_rail(r3)
+	-- Avoid rechecking the same stop multiple times.
+	if s1 and ((not s0) or (s1 ~= s0)) then stop_api.compute_layout(s1, ies) end
+	if s2 and ((not s1) or (s2 ~= s1)) and ((not s0) or (s2 ~= s0)) then stop_api.compute_layout(s2, ies) end
+	if s3 and ((not s2) or (s3 ~= s2)) and ((not s1) or (s3 ~= s1)) and ((not s0) or (s3 ~= s0)) then
+		stop_api.compute_layout(s3, ies)
+	end
 end
+on_entity_built_train_stop(function(stop_entity) recompute_nearby_stop_layouts(stop_entity, false) end)
+on_entity_broken_train_stop(function(stop_entity) recompute_nearby_stop_layouts(stop_entity, true) end)

@@ -1,3 +1,10 @@
+## Ideas
+
+- Item cache
+  - Cache forward/reverse signal lookups
+- Query system
+  - Self-describing: "query" query lists all possible queries along with parameters and return types
+
 ## Enhancements/Changes
 
 - Added a new map setting, "Enable debug overlay" - when enabled, overlays will be rendered over various Cybersyn objects showing information about their internal state.

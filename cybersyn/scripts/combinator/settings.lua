@@ -51,7 +51,7 @@ function combinator_api.write_setting(combinator, setting, value, skip_event)
 	if not writer then return false end
 	local written, new_value, old_value = writer(setting, combinator, value)
 	if written and (not skip_event) then
-		raise_combinator_setting_changed(combinator, setting.name, new_value, old_value)
+		raise_ephemeral_combinator_setting_changed(combinator, setting.name, new_value, old_value)
 	end
 	return written
 end

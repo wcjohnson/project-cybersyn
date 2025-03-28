@@ -193,12 +193,6 @@ function combinator_api.close_gui(player_index, silent)
 	if not player then return end
 	local gui_root = player.gui.screen
 	if gui_root[WINDOW_NAME] then
-		game.print("combinator_api.close_gui " .. tostring(silent),
-			{
-				skip = defines.print_skip.never,
-				sound = defines.print_sound.never,
-				game_state = false,
-			})
 		gui_root[WINDOW_NAME].destroy()
 		if not silent then player.play_sound({ path = COMBINATOR_CLOSE_SOUND }) end
 	end
@@ -211,12 +205,6 @@ function combinator_api.open_gui(player_index, combinator)
 	if not combinator_api.is_valid(combinator) then return end
 	local player = game.get_player(player_index)
 	if not player then return end
-	game.print("combinator_api.open_gui",
-		{
-			skip = defines.print_skip.never,
-			sound = defines.print_sound.never,
-			game_state = false,
-		})
 	-- Close any existing gui
 	combinator_api.close_gui(player_index, true)
 	-- Create new gui state
@@ -271,31 +259,12 @@ function combinator_api.open_gui(player_index, combinator)
 							direction = "vertical",
 							style_mods = { horizontal_align = "left" },
 							children = {
-								--status
 								{
+									name = "statuses",
 									type = "flow",
-									name = "status",
-									style = "flib_titlebar_flow",
-									direction = "horizontal",
+									direction = "vertical",
 									style_mods = {
-										vertical_align = "center",
-										horizontally_stretchable = true,
 										bottom_padding = 4,
-									},
-									children = {
-										-- LORD: update function to apply status to these elts.
-										{
-											type = "sprite",
-											name = "status_sprite",
-											sprite = "utility/status_not_working",
-											style = "status_image",
-											style_mods = { stretch_image_to_widget_size = true },
-										},
-										{
-											type = "label",
-											name = "status_label",
-											caption = { "entity-status.disabled" },
-										},
 									},
 								},
 								--preview
@@ -309,7 +278,6 @@ function combinator_api.open_gui(player_index, combinator)
 										padding = 0,
 									},
 									children = {
-										-- LORD: update function
 										{ type = "entity-preview", name = "preview", style = "wide_entity_button" },
 									},
 								},
@@ -374,7 +342,6 @@ end
 local function on_gui_closed(event)
 	local element = event.element
 	if not element or element.name ~= WINDOW_NAME then return end
-	game.print("on_gui_closed", { skip = defines.print_skip.never, sound = defines.print_sound.never, game_state = false })
 	combinator_api.close_gui(event.player_index)
 end
 
@@ -419,7 +386,8 @@ on_combinator_ghost_revived(function(ghost_id, new_combinator)
 	rebuild_mode_sections(combinator_api.get_combinator_settings(eph))
 end)
 
-on_combinator_setting_changed(function(combinator, setting_name, new_value, old_value)
+-- Repaint GUIs when a combinator's settings change.
+on_ephemeral_combinator_setting_changed(function(combinator, setting_name, new_value, old_value)
 	local settings = combinator_api.get_combinator_settings(combinator)
 	if not settings then return end
 	if setting_name == nil or setting_name == "mode" then

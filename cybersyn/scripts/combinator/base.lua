@@ -194,3 +194,12 @@ function combinator_api.find_associable_entity(comb)
 	end
 	return stop, rail
 end
+
+-- Whenever an ephemeral combinator's settings change, fire event for the
+-- corresponding real combinator if it exists.
+on_ephemeral_combinator_setting_changed(function(eph, setting, new, old)
+	local real = combinator_api.realize(eph)
+	if real then
+		raise_combinator_setting_changed(real, setting, new, old)
+	end
+end)

@@ -1,10 +1,9 @@
 -- Lifecycle management for train stops.
 -- Train stop state is only created/destroyed in this module.
 
----Create a stored train-stop state.
 ---@param stop_entity LuaEntity A *valid* reference to a train stop.
 ---@return Cybersyn.TrainStop #The new stop state.
-function stop_api.create_stop_state(stop_entity)
+local function create_stop_state(stop_entity)
 	local map_data = (storage --[[@as MapData]])
 	local id = stop_entity.unit_number
 	if not id then
@@ -30,10 +29,9 @@ function stop_api.create_stop_state(stop_entity)
 	return map_data.train_stops[id]
 end
 
----Destroy a stored train-stop state.
 ---@param stop_id UnitNumber
 ---@return boolean `true` if the state was removed, `false` if it was not found.
-function stop_api.destroy_stop_state(stop_id)
+local function destroy_stop_state(stop_id)
 	local map_data = (storage --[[@as MapData]])
 	if map_data.train_stops[stop_id] then
 		map_data.train_stops[stop_id] = nil
@@ -63,7 +61,7 @@ function stop_api.destroy_stop(stop_id)
 
 	-- Remove the stop itself.
 	raise_train_stop_destroyed(stop)
-	stop_api.destroy_stop_state(stop_id)
+	destroy_stop_state(stop_id)
 end
 
 local reassociate_recursive
@@ -171,7 +169,7 @@ function create_recursive(stop_entities, depth)
 			goto continue
 		end
 		-- Create the new stop state.
-		stop = stop_api.create_stop_state(stop_entity)
+		stop = create_stop_state(stop_entity)
 		stop.is_being_created = true
 		raise_train_stop_created(stop)
 		-- Recursively reassociate combinators near the new stop.
@@ -219,3 +217,20 @@ function internal_update_stop_state(stop_id, flags)
 
 	raise_train_stop_state_check(stop, flags)
 end
+
+-- When a stop is built, check for combinators nearby and associate them.
+on_entity_built_train_stop(function(stop_entity)
+	local combs = stop_api.find_associable_combinators(stop_entity)
+	if #combs > 0 then
+		local comb_states = map(combs, function(comb)
+			return combinator_api.get_combinator_state(comb.unit_number)
+		end)
+		stop_api.reassociate_combinators(comb_states)
+	end
+end)
+
+-- When a stop is broken, destroy associated data.
+on_entity_broken_train_stop(function(stop_entity)
+	local stop_id = stop_entity.unit_number --[[@as uint]]
+	stop_api.destroy_stop(stop_id)
+end)

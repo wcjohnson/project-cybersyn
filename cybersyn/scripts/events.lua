@@ -70,9 +70,22 @@ on_event_meta, raise_event_meta, meta_event_meta = event("event_meta",
 -- - Arg 2 - `string?` - the name of the setting that changed, if known. If `nil`, you must pessimistically assume any/all settings have changed.
 -- - Arg 3 - `any` - the new value of the setting, if the setting name was given
 -- - Arg 4 - `any` - the old value of the setting, if the setting name was given
-on_combinator_setting_changed, raise_combinator_setting_changed, meta_combinator_setting_changed = event(
-	"combinator_setting_changed",
-	"Cybersyn.Combinator.Ephemeral", "any", "any", "any", "nil")
+on_ephemeral_combinator_setting_changed, raise_ephemeral_combinator_setting_changed, meta_ephemeral_combinator_setting_changed =
+		event(
+			"ephemeral_combinator_setting_changed",
+			"Cybersyn.Combinator.Ephemeral", "any", "any", "any", "nil")
+
+-- Event raised when a setting is changed on a real combinator. This is fired
+-- in addition to and after `ephemeral_combinator_setting_changed` if the
+-- combinator in question is real.
+-- - Arg 1 - `Cybersyn.Combinator` - reference to the combinator whose setting changed
+-- - Arg 2 - `string?` - the name of the setting that changed, if known. If `nil`, you must pessimistically assume any/all settings have changed.
+-- - Arg 3 - `any` - the new value of the setting, if the setting name was given
+-- - Arg 4 - `any` - the old value of the setting, if the setting name was given
+on_combinator_setting_changed, raise_combinator_setting_changed, meta_combinator_setting_changed =
+		event(
+			"combinator_setting_changed",
+			"Cybersyn.Combinator", "any", "any", "any", "nil")
 
 -- Event raised when a state is updated on a live combinator.
 -- For performance reasons, states are not compared to old states. Consumers of
@@ -206,3 +219,23 @@ on_train_stop_accepted_layouts_changed, raise_train_stop_accepted_layouts_change
 on_game_on_init, raise_game_on_init, meta_game_on_init = event(
 	"game_on_init",
 	"nil", "nil", "nil", "nil", "nil")
+
+-- Raw event fired when a train stop entity is built.
+on_entity_built_train_stop, raise_entity_built_train_stop, meta_entity_built_train_stop = event(
+	"entity_built_train_stop",
+	"LuaEntity", "nil", "nil", "nil", "nil")
+
+-- Raw event fired when a train stop entity is broken.
+on_entity_broken_train_stop, raise_entity_broken_train_stop, meta_entity_broken_train_stop = event(
+	"entity_broken_train_stop",
+	"LuaEntity", "nil", "nil", "nil", "nil")
+
+-- Raw event fired when a rail entity is built.
+on_entity_built_rail, raise_entity_built_rail, meta_entity_built_rail = event(
+	"entity_built_rail",
+	"LuaEntity", "nil", "nil", "nil", "nil")
+
+-- Raw event fired when a rail entity is broken.
+on_entity_broken_rail, raise_entity_broken_rail, meta_entity_broken_rail = event(
+	"entity_broken_rail",
+	"LuaEntity", "nil", "nil", "nil", "nil")

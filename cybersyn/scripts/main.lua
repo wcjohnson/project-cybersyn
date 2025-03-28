@@ -200,28 +200,6 @@ function on_station_broken(map_data, station_id, station)
 end
 
 ---@param map_data MapData
----@param stop LuaEntity
----@param comb_operation string
----@param comb_forbidden LuaEntity?
-local function search_for_station_combinator(map_data, stop, comb_operation, comb_forbidden)
-	local pos_x = stop.position.x
-	local pos_y = stop.position.y
-	local search_area = {
-		{ pos_x - 2, pos_y - 2 },
-		{ pos_x + 2, pos_y + 2 },
-	}
-	local entities = stop.surface.find_entities_filtered({ area = search_area, name = COMBINATOR_NAME })
-	for _, entity in pairs(entities) do
-		if entity.valid and entity ~= comb_forbidden and map_data.to_stop[entity.unit_number] == stop then
-			local param = get_comb_params(entity)
-			if param.operation == comb_operation then
-				return entity
-			end
-		end
-	end
-end
-
----@param map_data MapData
 ---@param comb LuaEntity
 ---@param tags Tags?
 ---@return string? op
@@ -375,49 +353,6 @@ end
 ---@param comb LuaEntity
 function on_combinator_ghost_broken(map_data, comb)
 	raise_combinator_ghost_destroyed(combinator_api.create_ephemeral_reference(comb))
-end
-
----@param map_data MapData
----@param comb LuaEntity
----@param unit_number uint
----@return uint, uint, Station|Depot|Refueler|nil, LuaEntity?
---Returns the internal entity associated with the given combinator, if one exists.
---`unit_number` must be equal to `comb.unit_number`.
---Returns 1 if `comb` is `entity_comb1` of a station.
---Returns 2 if `comb` is `entity_comb2` of a station.
---Returns 3 if `comb` defines a depot.
---Returns 4 if `comb` defines a refueler.
---Returns 0 if `comb` is not a core component of any entity.
-local function comb_to_internal_entity(map_data, comb, unit_number)
-	-- LORD: temp disabled, should be obsolete.
-
-	-- local stop = map_data.to_stop[unit_number]
-	-- if stop and stop.valid then
-	-- 	local id = stop.unit_number --[[@as uint]]
-	-- 	local station = map_data.stations[id]
-	-- 	if station then
-	-- 		if station.entity_comb1 == comb then
-	-- 			return 1, id, station, stop
-	-- 		elseif station.entity_comb2 == comb then
-	-- 			return 2, id, station, stop
-	-- 		end
-	-- 	else
-	-- 		local depot = map_data.depots[id]
-	-- 		if depot then
-	-- 			if depot.entity_comb == comb then
-	-- 				return 3, id, depot, stop
-	-- 			end
-	-- 		else
-	-- 			local refueler = map_data.refuelers[id]
-	-- 			if refueler then
-	-- 				if refueler.entity_comb == comb then
-	-- 					return 4, id, refueler, stop
-	-- 				end
-	-- 			end
-	-- 		end
-	-- 	end
-	-- end
-	return 0, 0, nil, nil
 end
 
 ---@param map_data MapData
@@ -628,21 +563,8 @@ end
 
 ---@param map_data MapData
 ---@param stop_entity LuaEntity
-local function on_stop_built(map_data, stop_entity)
-	local combs = stop_api.find_associable_combinators(stop_entity)
-	if #combs > 0 then
-		local comb_states = map(combs, function(comb)
-			return combinator_api.get_combinator_state(comb.unit_number)
-		end)
-		stop_api.reassociate_combinators(comb_states)
-	end
-end
-
----@param map_data MapData
----@param stop_entity LuaEntity
 local function on_stop_broken(map_data, stop_entity)
-	local stop_id = stop_entity.unit_number --[[@as uint]]
-	stop_api.destroy_stop(stop_id)
+	raise_entity_broken_train_stop(stop_entity)
 
 	-- LORD: legacy code, verify event driven version is ported over
 	-- local pos_x = stop.position.x
@@ -717,9 +639,9 @@ local function on_built(event)
 	if not entity or not entity.valid then return end
 
 	if entity.name == "train-stop" then
-		on_stop_built(storage, entity)
+		raise_entity_built_train_stop(entity)
 	elseif entity.type == "straight-rail" or entity.type == "curved-rail-a" or entity.type == "curved-rail-b" then
-		internal_rail_built(entity)
+		raise_entity_built_rail(entity)
 	elseif entity.name == "entity-ghost" and combinator_api.is_combinator_name(entity.ghost_name) then
 		on_combinator_ghost_built(storage, entity)
 	elseif combinator_api.is_combinator_name(entity.name) then
@@ -736,9 +658,9 @@ local function on_broken(event)
 	if not entity or not entity.valid then return end
 
 	if entity.name == "train-stop" then
-		on_stop_broken(storage, entity)
+		raise_entity_broken_train_stop(entity)
 	elseif entity.type == "straight-rail" or entity.type == "curved-rail-a" or entity.type == "curved-rail-b" then
-		internal_rail_broken(entity)
+		raise_entity_broken_rail(entity)
 	elseif entity.name == "entity-ghost" and combinator_api.is_combinator_name(entity.ghost_name) then
 		on_combinator_ghost_broken(storage, entity)
 	elseif combinator_api.is_combinator_name(entity.name) then
@@ -787,7 +709,7 @@ local function on_paste(event)
 	if not entity or not entity.valid then return end
 
 	if combinator_api.is_combinator_name(entity.name) then
-		raise_combinator_setting_changed(combinator_api.create_ephemeral_reference(entity), nil)
+		raise_ephemeral_combinator_setting_changed(combinator_api.create_ephemeral_reference(entity), nil)
 	end
 end
 
